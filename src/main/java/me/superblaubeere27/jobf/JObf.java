@@ -116,8 +116,9 @@ public class JObf {
 //            }
 
 //            gui = new GUI();
-            e.printStackTrace();
-            parser.printHelpOn(System.out);
+//            e.printStackTrace();
+//            parser.printHelpOn(System.out);
+            System.err.println("ERROR: " + e.getMessage() + " (try --help)");
 
 //            e.printStackTrace();
         }
