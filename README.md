@@ -1,4 +1,4 @@
-# Obfuscator
+# Obfuscator [![Build Status](https://travis-ci.org/superblaubeere27/obfuscator.svg?branch=master)](https://travis-ci.org/superblaubeere27/obfuscator)
 ## Obfuscated code
 Luyten + Procyon
 
