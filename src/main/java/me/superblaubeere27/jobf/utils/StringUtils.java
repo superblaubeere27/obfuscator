@@ -14,7 +14,7 @@ public class StringUtils {
     public static String makeUnreadable(final String input) {
         final StringBuilder builder = new StringBuilder();
         for (final char c : input.toCharArray())
-            builder.append((char) (c + '煙'));
+            builder.append((char) (c + '\u7159'));
         return builder.toString();
     }
 

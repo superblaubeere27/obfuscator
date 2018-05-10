@@ -159,7 +159,7 @@ public class Packager {
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, "java/util/Arrays", "toString", "([B)Ljava/lang/String;", false);
             mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);
             mv.visitInsn(Opcodes.RETURN);
-            mv.visitLocalVariable("i", "I", null, l2, l6, 0);
+            mv.visitLocalVariable(NameUtils.generateLocalVariableName(), "I", null, l2, l6, 0);
             mv.visitMaxs(8, 1);
             mv.visitEnd();
         }
@@ -275,8 +275,8 @@ public class Packager {
             mv.visitLabel(l2);
             mv.visitLineNumber(30, l2);
             mv.visitFrame(Opcodes.F_SAME1, 0, null, 1, new Object[]{"java/lang/Exception"});
-//            mv.visitVarInsn(Opcodes.ASTORE, 2);
-            mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Throwable", "printStackTrace", "()V", false);
+            mv.visitVarInsn(Opcodes.ASTORE, 2);
+//            mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Throwable", "printStackTrace", "()V", false);
             Label l4 = new Label();
             mv.visitLabel(l4);
             mv.visitLineNumber(31, l4);
@@ -286,10 +286,10 @@ public class Packager {
             mv.visitInsn(Opcodes.ARETURN);
             Label l5 = new Label();
             mv.visitLabel(l5);
-            mv.visitLocalVariable("this", "L" + decryptorClassName + ";", null, l0, l5, 0);
-            mv.visitLocalVariable("name", "Ljava/lang/String;", null, l0, l5, 1);
-            mv.visitLocalVariable("resource", "[B", null, l3, l2, 2);
-            mv.visitLocalVariable("e", "Ljava/lang/Exception;", null, l4, l5, 2);
+            mv.visitLocalVariable(NameUtils.generateLocalVariableName(), "L" + decryptorClassName + ";", null, l0, l5, 0);
+            mv.visitLocalVariable(NameUtils.generateLocalVariableName(), "Ljava/lang/String;", null, l0, l5, 1);
+            mv.visitLocalVariable(NameUtils.generateLocalVariableName(), "[B", null, l3, l2, 2);
+            mv.visitLocalVariable(NameUtils.generateLocalVariableName(), "Ljava/lang/Exception;", null, l4, l5, 2);
             mv.visitMaxs(7, 3);
             mv.visitEnd();
         }
@@ -414,12 +414,12 @@ public class Packager {
             mv.visitInsn(Opcodes.ARETURN);
             Label l9 = new Label();
             mv.visitLabel(l9);
-            mv.visitLocalVariable("name", "Ljava/lang/String;", null, l0, l9, 0);
-            mv.visitLocalVariable("is", "Ljava/io/InputStream;", null, l1, l9, 1);
-            mv.visitLocalVariable("buffer", "Ljava/io/ByteArrayOutputStream;", null, l2, l9, 2);
-            mv.visitLocalVariable("nRead", "I", null, l5, l4, 3);
-            mv.visitLocalVariable("nRead", "I", null, l6, l9, 3);
-            mv.visitLocalVariable("data", "[B", null, l3, l9, 4);
+            mv.visitLocalVariable(NameUtils.generateLocalVariableName(), "Ljava/lang/String;", null, l0, l9, 0);
+            mv.visitLocalVariable(NameUtils.generateLocalVariableName(), "Ljava/io/InputStream;", null, l1, l9, 1);
+            mv.visitLocalVariable(NameUtils.generateLocalVariableName(), "Ljava/io/ByteArrayOutputStream;", null, l2, l9, 2);
+            mv.visitLocalVariable(NameUtils.generateLocalVariableName(), "I", null, l5, l4, 3);
+            mv.visitLocalVariable(NameUtils.generateLocalVariableName(), "I", null, l6, l9, 3);
+            mv.visitLocalVariable(NameUtils.generateLocalVariableName(), "[B", null, l3, l9, 4);
             mv.visitMaxs(8, 5);
             mv.visitEnd();
         }
@@ -531,9 +531,9 @@ public class Packager {
             mv.visitInsn(Opcodes.ATHROW);
             Label l14 = new Label();
             mv.visitLabel(l14);
-            mv.visitLocalVariable("hash", "Ljava/security/MessageDigest;", null, l3, l2, 0);
-            mv.visitLocalVariable("s", "Ljava/lang/StringBuilder;", null, l4, l2, 1);
-            mv.visitLocalVariable("e", "Ljava/security/NoSuchAlgorithmException;", null, l13, l14, 0);
+            mv.visitLocalVariable(NameUtils.generateLocalVariableName(), "Ljava/security/MessageDigest;", null, l3, l2, 0);
+            mv.visitLocalVariable(NameUtils.generateLocalVariableName(), "Ljava/lang/StringBuilder;", null, l4, l2, 1);
+            mv.visitLocalVariable(NameUtils.generateLocalVariableName(), "Ljava/security/NoSuchAlgorithmException;", null, l13, l14, 0);
             mv.visitMaxs(8, 2);
             mv.visitEnd();
         }
