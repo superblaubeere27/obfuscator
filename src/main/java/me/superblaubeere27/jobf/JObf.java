@@ -11,7 +11,7 @@ import java.io.StringWriter;
 import java.util.logging.*;
 
 public class JObf {
-    public static final String VERSION = "Obfuscator v1.0 by superblaubeere27";
+    private static final String VERSION = "Obfuscator v" + (JObf.class.getPackage().getImplementationVersion() == null ? "0.0" : JObf.class.getPackage().getImplementationVersion()) + " by superblaubeere27";
     private final static Logger log = Logger.getLogger("Obfuscator");
     private static GUI gui;
 

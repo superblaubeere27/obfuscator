@@ -2,6 +2,7 @@ package me.superblaubeere27.jobf.processors;
 
 import me.superblaubeere27.jobf.IClassProcessor;
 import me.superblaubeere27.jobf.JObfImpl;
+import me.superblaubeere27.jobf.processors.encryption.string.*;
 import me.superblaubeere27.jobf.utils.NameUtils;
 import me.superblaubeere27.jobf.utils.NodeUtils;
 import me.superblaubeere27.jobf.utils.StringUtils;
@@ -11,22 +12,21 @@ import org.objectweb.asm.tree.*;
 
 import java.io.IOException;
 import java.lang.reflect.Modifier;
-import java.util.HashMap;
-import java.util.Random;
+import java.util.*;
 
 public class StringEncryptionProcessor implements IClassProcessor {
-    public static final String MAGICNUMBER_START = "\u4590";
-    public static final String MAGICNUMBER_SPLIT = "\u4591";
-    public static final String MAGICNUMBER_END = "\u4592";
+    private static final String MAGICNUMBER_START = "\u4590";
+    private static final String MAGICNUMBER_SPLIT = "\u4591";
+    private static final String MAGICNUMBER_END = "\u4592";
     private static Random random = new Random();
-    public boolean hideStrings = false;
     private JObfImpl inst;
+    private List<IStringEncryptionAlgorithm> algorithmList = new ArrayList<>();
 
     public StringEncryptionProcessor(JObfImpl inst) {
         this.inst = inst;
     }
 
-    public static void hideStrings(ClassNode cn, MethodNode... methods) {
+    private static void hideStrings(ClassNode cn, MethodNode... methods) {
         String fieldName = NameUtils.generateFieldName(cn);
         HashMap<Integer, String> hiddenStrings = new HashMap<>();
         int slot = 0;
@@ -41,6 +41,7 @@ public class StringEncryptionProcessor implements IClassProcessor {
                         if (stringLength + ((String) (ldc).cst).length() > 498) {
                             break;
                         }
+
                         InsnList insnList = new InsnList();
                         insnList.add(new FieldInsnNode(Opcodes.GETSTATIC, cn.name, fieldName, "[Ljava/lang/String;"));
                         insnList.add(NodeUtils.generateIntPush(slot));
@@ -115,24 +116,15 @@ public class StringEncryptionProcessor implements IClassProcessor {
         }
     }
 
-    public static String decrypt(String s, String s1) {
-        StringBuilder sb = new StringBuilder();
-        char[] key = s1.toCharArray();
-        int i = 0;
-        for (char c : s.toCharArray()) {
-            sb.append((char) (c ^ key[i % key.length]));
-            i++;
-        }
-        return sb.toString();
-    }
 
     @Override
     public void process(ClassNode node, int mode) {
-        hideStrings = mode == 1;
-        if (Modifier.isInterface(node.access)) return;
-        boolean injectMethod = false;
+        initAlgorithims(mode);
 
-        String decryptMethodName = NameUtils.generateMethodName(node, "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;");
+        boolean hideStrings = mode == 1;
+
+        if (Modifier.isInterface(node.access)) return;
+
         String stringArrayName = NameUtils.generateFieldName(node);
 
         HashMap<Integer, String> arrayMap = new HashMap<>();
@@ -161,14 +153,10 @@ public class StringEncryptionProcessor implements IClassProcessor {
                 }
             }
         }
-        try {
-            MethodNode method = NodeUtils.getMethod(NodeUtils.toNode(getClass().getName()), "decrypt");
-            method.access = Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC;
-            method.name = decryptMethodName;
-            node.methods.add(method);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+
+
+        HashMap<IStringEncryptionAlgorithm, String> encryptionMethodMap = new HashMap<>();
+
         if (slot > 0) {
             if (arrayMap.size() > 0) {
                 node.fields.add(new FieldNode(((node.access & Opcodes.ACC_INTERFACE) != 0 ? Opcodes.ACC_PUBLIC : Opcodes.ACC_PRIVATE) | Opcodes.ACC_FINAL | Opcodes.ACC_STATIC, stringArrayName, "[Ljava/lang/String;", null, null));
@@ -192,6 +180,16 @@ public class StringEncryptionProcessor implements IClassProcessor {
                 toAdd.add(new FieldInsnNode(Opcodes.PUTSTATIC, node.name, stringArrayName, "[Ljava/lang/String;"));
 
                 for (int j = 0; j < slot; j++) {
+                    IStringEncryptionAlgorithm processor = algorithmList.get(random.nextInt(algorithmList.size()));
+
+                    String name;
+
+                    if (!encryptionMethodMap.containsKey(processor)) {
+                        encryptionMethodMap.put(processor, name = NameUtils.generateMethodName(node, "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;"));
+                    } else {
+                        name = encryptionMethodMap.get(processor);
+                    }
+
                     LabelNode label = new LabelNode(new Label());
                     toAdd.add(label);
                     toAdd.add(new LineNumberNode(j, label));
@@ -199,9 +197,10 @@ public class StringEncryptionProcessor implements IClassProcessor {
                     toAdd.add(NodeUtils.generateIntPush(j));
 //                toAdd.add(getInstructions(integerList.get(j)));
                     String key = StringUtils.generateString(5);
-                    toAdd.add(new LdcInsnNode(decrypt(arrayMap.get(j), key)));
+                    toAdd.add(new LdcInsnNode(processor.encrypt(arrayMap.get(j), key)));
                     toAdd.add(new LdcInsnNode(key));
-                    toAdd.add(new MethodInsnNode(Opcodes.INVOKESTATIC, node.name, decryptMethodName, "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;", false));
+//                    System.out.println(name);
+                    toAdd.add(new MethodInsnNode(Opcodes.INVOKESTATIC, node.name, name, "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;", false));
 
                     toAdd.add(new InsnNode(Opcodes.AASTORE));
                 }
@@ -222,7 +221,36 @@ public class StringEncryptionProcessor implements IClassProcessor {
                     hideStrings(node, generateStrings);
             }
         }
+
+        for (Map.Entry<IStringEncryptionAlgorithm, String> iStringEncryptionAlgorithmStringEntry : encryptionMethodMap.entrySet()) {
+            try {
+                MethodNode method = NodeUtils.getMethod(NodeUtils.toNode(iStringEncryptionAlgorithmStringEntry.getKey().getClass().getName()), "decrypt");
+
+                if (method != null) {
+                    method.access = Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC;
+                    method.name = iStringEncryptionAlgorithmStringEntry.getValue();
+                    node.methods.add(method);
+                } else {
+                    throw new Error("Decryption method of " + iStringEncryptionAlgorithmStringEntry.getKey().getClass().getSimpleName() + " wasn't found");
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
         inst.setWorkDone();
+    }
+
+    private void initAlgorithims(int mode) {
+        algorithmList.clear();
+
+        algorithmList.add(new XOREncryptionAlgorithm());
+        algorithmList.add(new DESEncryptionAlgorithm());
+        algorithmList.add(new BlowfishEncryptionAlgorithm());
+
+        if (mode == 1) {
+            algorithmList.add(new AESEncryptionAlgorithm());
+        }
     }
 
 }
