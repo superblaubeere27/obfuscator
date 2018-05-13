@@ -5,6 +5,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.security.MessageDigest;
 import java.util.Base64;
 
+@Deprecated
 public class AESEncryptionAlgorithm implements IStringEncryptionAlgorithm {
 
     public static String decrypt(String obj, String key) {

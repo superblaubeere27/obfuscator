@@ -2,7 +2,10 @@ package me.superblaubeere27.jobf.processors;
 
 import me.superblaubeere27.jobf.IClassProcessor;
 import me.superblaubeere27.jobf.JObfImpl;
-import me.superblaubeere27.jobf.processors.encryption.string.*;
+import me.superblaubeere27.jobf.processors.encryption.string.BlowfishEncryptionAlgorithm;
+import me.superblaubeere27.jobf.processors.encryption.string.DESEncryptionAlgorithm;
+import me.superblaubeere27.jobf.processors.encryption.string.IStringEncryptionAlgorithm;
+import me.superblaubeere27.jobf.processors.encryption.string.XOREncryptionAlgorithm;
 import me.superblaubeere27.jobf.utils.NameUtils;
 import me.superblaubeere27.jobf.utils.NodeUtils;
 import me.superblaubeere27.jobf.utils.StringUtils;
@@ -249,7 +252,7 @@ public class StringEncryptionProcessor implements IClassProcessor {
         algorithmList.add(new BlowfishEncryptionAlgorithm());
 
         if (mode == 1) {
-            algorithmList.add(new AESEncryptionAlgorithm());
+//            algorithmList.add(new AESEncryptionAlgorithm());
         }
     }
 
