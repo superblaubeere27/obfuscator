@@ -76,7 +76,7 @@ public class JObfImpl {
         processors.add(processor);
     }
 
-    private void addProcessors() {
+    public void addProcessors() {
         processors.add(new StaticInitializionProcessor(this));
         processors.add(new ReferenceProxy(this));
         processors.add(new StringEncryptionProcessor(this));

@@ -37,6 +37,13 @@ public class NumberObfuscationProcessor implements IClassProcessor {
                 }
                 if (NodeUtils.isIntegerNumber(abstractInsnNode)) {
                     int number = NodeUtils.getIntValue(abstractInsnNode);
+
+                    if (number == Integer.MIN_VALUE) {
+                        continue;
+                    }
+//                    if (abstractInsnNode instanceof LdcInsnNode && ((LdcInsnNode) abstractInsnNode).cst instanceof Number && ((int) ((LdcInsnNode) abstractInsnNode).cst) == Integer.MIN_VALUE) {
+//                        System.out.println(((LdcInsnNode) abstractInsnNode).cst + "/" + number);
+//                    }
                     if (!Modifier.isInterface(node.access)
                             && mode == 1
                             ) {

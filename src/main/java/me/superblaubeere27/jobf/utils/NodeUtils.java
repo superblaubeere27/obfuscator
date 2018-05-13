@@ -55,7 +55,8 @@ public class NodeUtils {
         if (node instanceof LdcInsnNode && ((LdcInsnNode) node).cst instanceof Integer) {
             return (int) ((LdcInsnNode) node).cst;
         }
-        return 0;
+
+        throw new IllegalArgumentException(node + " isn't an integer node");
     }
 
     public static MethodInsnNode toCallNode(final MethodNode method, final ClassNode classNode) {

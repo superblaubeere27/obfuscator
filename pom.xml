@@ -8,7 +8,7 @@
 
     <groupId>me.superblaubeere27</groupId>
     <artifactId>obfuscator</artifactId>
-    <version>1.2</version>
+    <version>1.3</version>
 
     <dependencies>
         <dependency>
@@ -41,13 +41,13 @@
             <artifactId>forms_rt</artifactId>
             <version>7.0.3</version>
         </dependency>
-
         <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-            <version>RELEASE</version>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
             <scope>test</scope>
         </dependency>
+
     </dependencies>
 
     <build>
