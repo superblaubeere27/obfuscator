@@ -415,7 +415,7 @@ Packager
 HWID bound
 
 `java -jar obfuscator.jar --package --packagerMainClass HelloWorld --hwid 5614147245AD3553FE5B7FE0259BC886 --jarIn helloWorld.jar --jarOut helloWorld-obf.jar`
-HWID bound + Packaget
+HWID bound + Packager
 
 `java -jar obfuscator.jar --mode 1 --package --packagerMainClass HelloWorld --jarIn helloWorld.jar --jarOut helloWorld-obf.jar`
 Aggresive + Packager
