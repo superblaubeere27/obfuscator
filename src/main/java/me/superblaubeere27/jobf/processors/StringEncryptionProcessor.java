@@ -220,8 +220,10 @@ public class StringEncryptionProcessor implements IClassProcessor {
                 } else {
                     clInit.instructions.insertBefore(clInit.instructions.getFirst(), new MethodInsnNode(Opcodes.INVOKESTATIC, node.name, generateStrings.name, generateStrings.desc, false));
                 }
+
                 if (hideStrings)
                     hideStrings(node, generateStrings);
+
             }
         }
 

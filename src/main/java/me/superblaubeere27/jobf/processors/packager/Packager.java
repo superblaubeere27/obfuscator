@@ -8,7 +8,6 @@ import org.objectweb.asm.*;
 import org.objectweb.asm.tree.ClassNode;
 
 import java.io.UnsupportedEncodingException;
-import java.util.Arrays;
 import java.util.Random;
 
 import static org.objectweb.asm.Opcodes.T_BYTE;
@@ -44,15 +43,16 @@ public class Packager {
     }
 
     public void initHWID(byte[] hwid) {
-        decryptorClassName = NameUtils.generateLocalVariableName();
-        hwidBound = true;
-        this.key = hwid;
-
-        for (int i = 0; i < key.length; i++) {
-            key[i] = (byte) Math.abs(key[i]);
-        }
-
-        System.out.println(Arrays.toString(key));
+//        decryptorClassName = NameUtils.generateLocalVariableName();
+//        hwidBound = true;
+//        this.key = hwid;
+//
+//        for (int i = 0; i < key.length; i++) {
+//            key[i] = (byte) Math.abs(key[i]);
+//        }
+//
+//        System.out.println(Arrays.toString(key));
+        init();
     }
 
     public byte[] encryptClass(byte[] data) {

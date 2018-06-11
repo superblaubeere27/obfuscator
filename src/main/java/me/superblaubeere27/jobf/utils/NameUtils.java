@@ -14,9 +14,6 @@ import java.util.Random;
  */
 public class NameUtils {
 
-    public static String CLASS_CHARACTERS = "AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz";
-    public static String METHOD_CHARACTERS = "AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz";
-    public static String FIELD_CHARACTERS = "AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz";
     private static int classNames = 0;
     private static Map<String, HashMap<String, Integer>> USED_METHODNAMES = new HashMap<>();
     private static Map<String, Integer> USED_FIELDNAMES = new HashMap<>();
@@ -25,20 +22,17 @@ public class NameUtils {
     private static int iL_uniqueInt = 0;
 
     private static Random random = new Random();
+    private static int METHODS = 0;
+    private static int FIELDS = 0;
 
     public static int randInt(int min, int max) {
         return random.nextInt(max - min) + min;
     }
 
     public static void setup(final String classCharacters, final String methodCharacters, final String fieldCharacters, boolean iL) {
-//        USED_CLASSNAMES.clear();
         USED_METHODNAMES.clear();
         USED_FIELDNAMES.clear();
 
-        CLASS_CHARACTERS = classCharacters;
-        METHOD_CHARACTERS = methodCharacters;
-        FIELD_CHARACTERS = fieldCharacters;
-//        NameUtils.iL = iL;
     }
 
     public static String generateSpaceString(int length) {
@@ -67,21 +61,26 @@ public class NameUtils {
     }
 
     public static String generateMethodName(final String className, String desc) {
-        if (!USED_METHODNAMES.containsKey(className)) {
-            USED_METHODNAMES.put(className, new HashMap<>());
-        }
-        HashMap<String, Integer> descMap = USED_METHODNAMES.get(className);
-
-        if (!descMap.containsKey(desc)) {
-            descMap.put(desc, 0);
-        }
-
-        int i = descMap.get(desc);
-        descMap.put(desc, i + 1);
+//        if (!USED_METHODNAMES.containsKey(className)) {
+//            USED_METHODNAMES.put(className, new HashMap<>());
+//        }
+//
+//        HashMap<String, Integer> descMap = USED_METHODNAMES.get(className);
+//
+//        if (!descMap.containsKey(desc)) {
+//            descMap.put(desc, 0);
+//        }
+////        System.out.println("0 " + className + "/" + desc + ":" + descMap);
+//
+//        int i = descMap.get(desc);
+//        descMap.put(desc, i + 1);
 
 //        System.out.println(USED_METHODNAMES);
 
-        return Util.toIl(i);
+//        System.out.println(className + "/" + desc + ":" + descMap);
+
+//        return Util.toIl(i);
+        return Util.toIl(METHODS++);
     }
 
     public static String generateMethodName(final ClassNode classNode, String desc) {
@@ -89,14 +88,15 @@ public class NameUtils {
     }
 
     public static String generateFieldName(final String className) {
-        if (!USED_FIELDNAMES.containsKey(className)) {
-            USED_FIELDNAMES.put(className, 0);
-        }
-
-        int i = USED_FIELDNAMES.get(className);
-        USED_FIELDNAMES.put(className, i + 1);
-
-        return Util.toIl(i);
+//        if (!USED_FIELDNAMES.containsKey(className)) {
+//            USED_FIELDNAMES.put(className, 0);
+//        }
+//
+//        int i = USED_FIELDNAMES.get(className);
+//        USED_FIELDNAMES.put(className, i + 1);
+//
+//        return Util.toIl(i);
+        return Util.toIl(FIELDS++);
     }
 
     public static String generateFieldName(final ClassNode classNode) {
@@ -121,5 +121,14 @@ public class NameUtils {
         }
         stringBuilder.append((char) randInt(128, 250));
         return stringBuilder.toString();
+    }
+
+    public static void mapClass(String old, String newName) {
+        if (USED_METHODNAMES.containsKey(old)) {
+            USED_METHODNAMES.put(newName, USED_METHODNAMES.get(old));
+        }
+        if (USED_FIELDNAMES.containsKey(old)) {
+            USED_FIELDNAMES.put(newName, USED_FIELDNAMES.get(old));
+        }
     }
 }

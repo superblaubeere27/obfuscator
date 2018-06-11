@@ -3,6 +3,9 @@ package me.superblaubeere27.jobf.util;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.ClassNode;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileFilter;
@@ -11,7 +14,12 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.List;
 import java.util.StringJoiner;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import static org.objectweb.asm.Opcodes.*;
 
@@ -109,5 +117,70 @@ public class Util {
         }
 
         return sb.toString();
+    }
+
+    public static String getMainClass(String s) {
+        String mainClass = null;
+
+        for (String s1 : s.split("\n")) {
+            if (s1.startsWith("Main-Class: ")) {
+                mainClass = s1.substring("Main-Class: ".length());
+            }
+        }
+
+        return mainClass;
+    }
+
+    public static List<ClassNode> toClassNodeArray(File file) throws IOException {
+        ZipFile zip = new ZipFile(file);
+
+        List<ClassNode> nodes = new ArrayList<>();
+
+        Enumeration<? extends ZipEntry> entries = zip.entries();
+
+        while (entries.hasMoreElements()) {
+            ZipEntry entry = entries.nextElement();
+
+            if (entry.getName().endsWith(".class")) {
+                try {
+                    ClassReader reader = new ClassReader(zip.getInputStream(entry));
+                    ClassNode node = new ClassNode();
+
+                    reader.accept(node, 0);
+
+                    nodes.add(node);
+                } catch (Exception e) {
+                    System.out.println("Failed to read " + entry.getName());
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return nodes;
+    }
+
+    public static String getInternalName(Type type) {
+        switch (type.toString()) {
+            case "V":
+                return "void";
+            case "Z":
+                return "boolean";
+            case "C":
+                return "char";
+            case "B":
+                return "byte";
+            case "S":
+                return "short";
+            case "I":
+                return "int";
+            case "F":
+                return "float";
+            case "J":
+                return "long";
+            case "D":
+                return "double";
+            default:
+                throw new IllegalArgumentException("Type not known.");
+        }
     }
 }

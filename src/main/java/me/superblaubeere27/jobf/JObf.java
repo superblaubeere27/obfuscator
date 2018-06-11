@@ -5,9 +5,14 @@ import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import me.superblaubeere27.hwid.HWID;
 import me.superblaubeere27.jobf.ui.GUI;
+import me.superblaubeere27.jobf.util.script.JObfScript;
 
+import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.*;
 
 public class JObf {
@@ -27,7 +32,12 @@ public class JObf {
         parser.accepts("package").withOptionalArg().describedAs("Encrypts all classes");
         parser.accepts("packagerMainClass").requiredIf("package").availableIf("package").withOptionalArg();
         parser.accepts("mode").withOptionalArg().describedAs("0 = Normal, 1 = Aggressive (Might not work)").ofType(Integer.class).defaultsTo(0);
+        parser.accepts("cp").withOptionalArg().describedAs("ClassPath; Only for name obfuscation").ofType(File.class);
+        parser.accepts("scriptFile").withOptionalArg().describedAs("[Not documented] JS script file").ofType(File.class);
+        parser.accepts("nameobf").withOptionalArg().describedAs("!!! DEPRECATED !!!").ofType(boolean.class);
+        parser.accepts("hwid").withOptionalArg().describedAs("Enabled HWID protection").ofType(String.class);
         parser.accepts("log").withRequiredArg();
+
 
         try {
             OptionSet options = parser.parse(args);
@@ -101,8 +111,39 @@ public class JObf {
             log("Output:         " + jarOut);
             log("Log:            " + log);
 
+            List<File> fileList = new ArrayList<>();
+
+            if (options.has("cp")) {
+                for (Object cp : options.valuesOf("cp")) {
+                    File file = (File) cp;
+
+                    if (file.isDirectory()) {
+                        Files.walk(file.toPath()).filter(p -> {
+                            String path = p.toString().toLowerCase();
+
+                            return path.endsWith(".jar") || path.endsWith(".zip");
+                        }).forEach(p -> {
+                            fileList.add(p.toFile());
+                        });
+                    } else if (file.getName().endsWith(".jar") || file.getName().endsWith(".zip")) {
+                        fileList.add(file);
+                    }
+                }
+            }
+
+//            for (File file : fileList) {
+//                System.out.println("ClassPath: " + file.getAbsolutePath());
+//            }
+            String scriptContent = "";
+
+            if (options.has("scriptFile")) {
+                scriptContent = new String(Files.readAllBytes(((File) options.valueOf("scriptFile")).toPath()), "UTF-8");
+            }
+
+            JObfScript script = new JObfScript(scriptContent);
+
             try {
-                JObfImpl.processConsole(jarIn, jarOut, log, mode, options.has("package"), false, HWID.generateHWID(), options.has("package") ? String.valueOf(options.valueOf("packagerMainClass")) : "");
+                JObfImpl.processConsole(jarIn, jarOut, fileList, log, mode, options.has("package"), options.has("nameobf"), options.has("hwid"), options.hasArgument("hwid") ? HWID.hexStringToByteArray((String) options.valueOf("hwid")) : HWID.generateHWID(), options.has("package") ? String.valueOf(options.valueOf("packagerMainClass")) : "", script);
             } catch (Exception e) {
                 System.err.println("ERROR: " + e.getMessage());
                 e.printStackTrace();

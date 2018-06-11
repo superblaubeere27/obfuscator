@@ -8,7 +8,7 @@
 
     <groupId>me.superblaubeere27</groupId>
     <artifactId>obfuscator</artifactId>
-    <version>1.3</version>
+    <version>1.4</version>
 
     <dependencies>
         <dependency>
@@ -47,6 +47,11 @@
             <version>4.12</version>
             <scope>test</scope>
         </dependency>
+        <!--<dependency>-->
+        <!--<groupId>com.diffplug.jscriptbox</groupId>-->
+        <!--<artifactId>jscriptbox</artifactId>-->
+        <!--<version>3.0.0</version>-->
+        <!--</dependency>-->
 
     </dependencies>
 

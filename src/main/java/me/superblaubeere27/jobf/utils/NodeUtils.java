@@ -1,12 +1,15 @@
 package me.superblaubeere27.jobf.utils;
 
 import me.superblaubeere27.jobf.JObf;
+import me.superblaubeere27.jobf.util.Util;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
 import java.io.IOException;
 import java.lang.reflect.Modifier;
+import java.util.HashMap;
 
 import static org.objectweb.asm.Opcodes.*;
 
@@ -16,6 +19,67 @@ import static org.objectweb.asm.Opcodes.*;
  * Fume - By CCBlueX(Marco)
  */
 public class NodeUtils {
+    public final static HashMap<Type, Integer> TYPE_TO_LOAD = new HashMap<>();
+    public final static HashMap<Type, Integer> TYPE_TO_STORE = new HashMap<>();
+    public static HashMap<Type, String> TYPE_TO_WRAPPER = new HashMap<>();
+
+    static {
+        TYPE_TO_WRAPPER.put(Type.INT_TYPE, "java/lang/Integer");
+        TYPE_TO_WRAPPER.put(Type.VOID_TYPE, "java/lang/Void");
+        TYPE_TO_WRAPPER.put(Type.BOOLEAN_TYPE, "java/lang/Boolean");
+        TYPE_TO_WRAPPER.put(Type.CHAR_TYPE, "java/lang/Character");
+        TYPE_TO_WRAPPER.put(Type.BYTE_TYPE, "java/lang/Byte");
+        TYPE_TO_WRAPPER.put(Type.SHORT_TYPE, "java/lang/Short");
+        TYPE_TO_WRAPPER.put(Type.FLOAT_TYPE, "java/lang/Float");
+        TYPE_TO_WRAPPER.put(Type.LONG_TYPE, "java/lang/Long");
+        TYPE_TO_WRAPPER.put(Type.DOUBLE_TYPE, "java/lang/Double");
+
+        TYPE_TO_LOAD.put(Type.INT_TYPE, Opcodes.ILOAD);
+        TYPE_TO_LOAD.put(Type.VOID_TYPE, Opcodes.NOP);
+        TYPE_TO_LOAD.put(Type.BOOLEAN_TYPE, Opcodes.ILOAD);
+        TYPE_TO_LOAD.put(Type.CHAR_TYPE, Opcodes.ILOAD);
+        TYPE_TO_LOAD.put(Type.BYTE_TYPE, Opcodes.ILOAD);
+        TYPE_TO_LOAD.put(Type.SHORT_TYPE, Opcodes.ILOAD);
+        TYPE_TO_LOAD.put(Type.FLOAT_TYPE, Opcodes.FLOAD);
+        TYPE_TO_LOAD.put(Type.LONG_TYPE, Opcodes.LLOAD);
+        TYPE_TO_LOAD.put(Type.DOUBLE_TYPE, Opcodes.DLOAD);
+
+        TYPE_TO_STORE.put(Type.INT_TYPE, Opcodes.ISTORE);
+        TYPE_TO_STORE.put(Type.VOID_TYPE, Opcodes.NOP);
+        TYPE_TO_STORE.put(Type.BOOLEAN_TYPE, Opcodes.ISTORE);
+        TYPE_TO_STORE.put(Type.CHAR_TYPE, Opcodes.ISTORE);
+        TYPE_TO_STORE.put(Type.BYTE_TYPE, Opcodes.ISTORE);
+        TYPE_TO_STORE.put(Type.SHORT_TYPE, Opcodes.ISTORE);
+        TYPE_TO_STORE.put(Type.FLOAT_TYPE, Opcodes.FSTORE);
+        TYPE_TO_STORE.put(Type.LONG_TYPE, Opcodes.LSTORE);
+        TYPE_TO_STORE.put(Type.DOUBLE_TYPE, Opcodes.DLOAD);
+    }
+
+    public static AbstractInsnNode getWrapperMethod(Type type) {
+        if (TYPE_TO_WRAPPER.containsKey(type)) {
+            return new MethodInsnNode(Opcodes.INVOKESTATIC, TYPE_TO_WRAPPER.get(type), "valueOf", "(" + type.toString() + ")L" + TYPE_TO_WRAPPER.get(type) + ";", false);
+        }
+
+        return new InsnNode(Opcodes.NOP);
+    }
+
+    public static AbstractInsnNode getTypeNode(Type type) {
+        if (TYPE_TO_WRAPPER.containsKey(type)) {
+            return new FieldInsnNode(Opcodes.GETSTATIC, TYPE_TO_WRAPPER.get(type), "TYPE", "Ljava/lang/Class;");
+        }
+        return new LdcInsnNode(type);
+    }
+
+    public static AbstractInsnNode getUnWrapMethod(Type type) {
+        if (TYPE_TO_WRAPPER.containsKey(type)) {
+            String internalName = Util.getInternalName(type);
+            return new MethodInsnNode(Opcodes.INVOKESTATIC, TYPE_TO_WRAPPER.get(type), internalName + "Value", "(L" + TYPE_TO_WRAPPER.get(type) + ";)" + type.toString(), false);
+        }
+
+        return new InsnNode(Opcodes.NOP);
+    }
+
+    //mv.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false);
 
     public static boolean isIntegerNumber(AbstractInsnNode ain) {
         if (ain.getOpcode() == BIPUSH || ain.getOpcode() == SIPUSH) {
@@ -105,4 +169,12 @@ public class NodeUtils {
 
         return classNode;
     }
+
+//    public static int getTypeLoad(Type argumentType) {
+//        if (argumentType.getOpcode()) {
+//
+//        }
+//
+//        return NodeUtils.TYPE_TO_LOAD.get(argumentType);
+//    }
 }
