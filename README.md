@@ -400,6 +400,8 @@ public class lIllllIlIl extends ClassLoader
 
 `--log <file>` Log file
 
+`--hwid [<hwid>]` Enabled Hardware ID bound. If `hwid` isn't provided it will use the HWID of your system.
+
 ### Examples
 `java -jar obfuscator.jar --jarIn helloWorld.jar --jarOut helloWorld-obf.jar`
 
@@ -408,6 +410,12 @@ Aggressive
 
 `java -jar obfuscator.jar --package --packagerMainClass HelloWorld --jarIn helloWorld.jar --jarOut helloWorld-obf.jar`
 Packager
+
+`java -jar obfuscator.jar --hwid 5614147245AD3553FE5B7FE0259BC886 --jarIn helloWorld.jar --jarOut helloWorld-obf.jar`
+HWID bound
+
+`java -jar obfuscator.jar --package --packagerMainClass HelloWorld --hwid 5614147245AD3553FE5B7FE0259BC886 --jarIn helloWorld.jar --jarOut helloWorld-obf.jar`
+HWID bound + Packager
 
 `java -jar obfuscator.jar --mode 1 --package --packagerMainClass HelloWorld --jarIn helloWorld.jar --jarOut helloWorld-obf.jar`
 Aggresive + Packager
