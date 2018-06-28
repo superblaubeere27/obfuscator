@@ -171,6 +171,7 @@ public class StringEncryptionProcessor implements IClassProcessor {
                 if (clInit.instructions == null)
                     clInit.instructions = new InsnList();
 
+
                 InsnList toAdd = new InsnList();
 
 //            if (clInit.instructions.getFirst() == null)

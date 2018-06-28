@@ -9,6 +9,7 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 
+import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Random;
 
@@ -139,6 +140,9 @@ public class HWIDProtection implements IClassProcessor {
 
     @Override
     public void process(ClassNode node, int mode) {
+        if (Modifier.isInterface(node.access)) {
+            return;
+        }
         HashMap<FieldNode, Object> objs = new HashMap<>();
 
         String methodName = addHWIDGenerator(node);
@@ -169,7 +173,7 @@ public class HWIDProtection implements IClassProcessor {
         toAdd.add(new JumpInsnNode(Opcodes.IFNE, l1));
         toAdd.add(l2);
         toAdd.add(new InsnNode(Opcodes.ACONST_NULL));
-        toAdd.add(new LdcInsnNode("Invalid HWID"));
+        toAdd.add(new LdcInsnNode("Invalid HWID (" + node.name + ")"));
         toAdd.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "javax/swing/JOptionPane", "showMessageDialog", "(Ljava/awt/Component;Ljava/lang/Object;)V", false));
 
         toAdd.add(new IntInsnNode(Opcodes.SIPUSH, 1337));

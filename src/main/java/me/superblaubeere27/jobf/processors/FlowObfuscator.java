@@ -125,6 +125,18 @@ public class FlowObfuscator implements IClassProcessor {
     @Override
     public void process(ClassNode node, int mode) {
         for (MethodNode method : node.methods) {
+            LabelNode label = new LabelNode();
+            LabelNode label1 = new LabelNode();
+
+//            if (method.instructions.getFirst() != null) {
+//                method.instructions.insertBefore(method.instructions.getFirst(), label);
+//                method.instructions.insertBefore(method.instructions.getFirst(), new JumpInsnNode(Opcodes.GOTO, label1));
+//                method.instructions.insertBefore(method.instructions.getFirst(), new InsnNode(Opcodes.ATHROW));
+//                method.instructions.insertBefore(method.instructions.getFirst(), new InsnNode(Opcodes.ACONST_NULL));
+//                method.instructions.insertBefore(method.instructions.getFirst(), new JumpInsnNode(Opcodes.GOTO, label));
+//                method.instructions.insertBefore(method.instructions.getFirst(), label1);
+//            }
+
             for (AbstractInsnNode abstractInsnNode : method.instructions.toArray()) {
                 if (abstractInsnNode instanceof JumpInsnNode && abstractInsnNode.getOpcode() == Opcodes.GOTO) {
                     method.instructions.insertBefore(abstractInsnNode, new LdcInsnNode(""));
@@ -138,6 +150,20 @@ public class FlowObfuscator implements IClassProcessor {
                     method.instructions.insert(insnNode, insnList);
                     method.instructions.remove(insnNode);
                 }
+
+//                if (abstractInsnNode instanceof JumpInsnNode && abstractInsnNode.getOpcode() != Opcodes.GOTO) {
+//                    JumpInsnNode insnNode = (JumpInsnNode) abstractInsnNode;
+//
+//                    int invertedJmp = NodeUtils.getInvertedJump(insnNode.getOpcode());
+//
+//                    if (invertedJmp != -1) {
+//                        LabelNode invertedLabel = new LabelNode();
+//                        method.instructions.insert(insnNode, invertedLabel);
+//                        method.instructions.insert(insnNode, new JumpInsnNode(Opcodes.GOTO, insnNode.label));
+//                        method.instructions.insert(insnNode, new JumpInsnNode(invertedJmp, invertedLabel));
+//                        method.instructions.remove(insnNode);
+//                    }
+//                }
 //                if (abstractInsnNode instanceof MethodInsnNode || abstractInsnNode instanceof FieldInsnNode) {
 //                    method.instructions.insertBefore(abstractInsnNode, new LdcInsnNode(""));
 //                    method.instructions.insertBefore(abstractInsnNode, new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/String", "length", "()I", false));

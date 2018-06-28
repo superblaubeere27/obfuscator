@@ -170,6 +170,26 @@ public class NodeUtils {
         return classNode;
     }
 
+    public static int getInvertedJump(int opcode) {
+        int i = -1;
+
+        switch (opcode) {
+            case Opcodes.IFEQ:
+                i = Opcodes.IFNE;
+                break;
+            case Opcodes.IFNE:
+                i = Opcodes.IFEQ;
+                break;
+            case Opcodes.IF_ACMPEQ:
+                i = Opcodes.IF_ACMPNE;
+                break;
+            case Opcodes.IF_ACMPNE:
+                i = Opcodes.IF_ACMPEQ;
+                break;
+        }
+        return i;
+    }
+
 //    public static int getTypeLoad(Type argumentType) {
 //        if (argumentType.getOpcode()) {
 //

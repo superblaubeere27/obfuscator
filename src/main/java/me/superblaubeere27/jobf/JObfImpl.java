@@ -320,7 +320,6 @@ public class JObfImpl {
         if (hwid) {
             processors.add(new HWIDProtection(this, hwidBytes));
         }
-//        processors.add(new ReferenceProxy(this));
         processors.add(new StringEncryptionProcessor(this));
         processors.add(new NumberObfuscationProcessor(this));
         processors.add(new FlowObfuscator(this));
@@ -328,8 +327,11 @@ public class JObfImpl {
         processors.add(new LineNumberRemover(this));
         processors.add(new ShuffleMembersProcessor(this));
 
-//        processors.add(new InvokeDynamic(this));
+        processors.add(new InvokeDynamic(this));
+
 //        nameObfuscationProcessors.add(new NameObfuscation());
+//        processors.add(new CrasherProcessor(this));
+//        processors.add(new ReferenceProxy(this));
     }
 
     public void processJar(String inFile, String outFile, int mode) {
@@ -429,7 +431,7 @@ public class JObfImpl {
                     for (IClassProcessor proc : processors)
                         proc.process(cn, mode);
 
-                    ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+                    ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
                     cn.accept(writer);
 
                     entryData = writer.toByteArray();
@@ -542,7 +544,7 @@ public class JObfImpl {
 //            }
 //        }
 
-        ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+        ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
         cn.accept(writer);
 
         return workDone ? writer.toByteArray() : cls;

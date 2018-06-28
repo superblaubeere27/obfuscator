@@ -21,8 +21,15 @@ public class JObf {
     private static GUI gui;
 
     public static void main(String[] args) throws Exception {
-//        System.out.println(Util.modifierToString(0x9));
+//        MethodHandle handle = MethodHandles.lookup().findVirtual(PrintStream.class, "println", MethodType.methodType(void.class, int.class));
+//        handle.asType(MethodType.methodType(void.class, int.class));
+//        MethodHandles.lookup().loo
 
+//        try {
+//            handle.invoke(System.out, 1337);
+//        } catch (Throwable throwable) {
+//            throwable.printStackTrace();
+//        }
 
         OptionParser parser = new OptionParser();
         parser.accepts("help").forHelp();
