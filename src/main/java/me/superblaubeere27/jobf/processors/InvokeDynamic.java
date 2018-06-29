@@ -147,6 +147,10 @@ public class InvokeDynamic implements IClassProcessor {
         if (!NodeUtils.isClassValid(classNode)) {
             return;
         }
+        if (classNode.version == Opcodes.V1_1 || classNode.version < Opcodes.V1_4) {
+            System.err.println("!!! WARNING !!! " + classNode.name + "'s lang level is too low (VERSION > V1_4)");
+            return;
+        }
 
         FieldNode arrayField = new FieldNode(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC, NameUtils.generateFieldName(classNode), "[Ljava/lang/String;", null, null);
 
@@ -208,9 +212,8 @@ public class InvokeDynamic implements IClassProcessor {
         if (count > 0) {
             if (classNode.version < Opcodes.V1_7) {
                 inst.computeMode = ClassWriter.COMPUTE_FRAMES;
-                //            System.out.println("FRAMES");
             }
-            classNode.version = Opcodes.V1_7;
+            classNode.version = Math.max(Opcodes.V1_7, classNode.version);
 
             MethodNode generatorMethod = new MethodNode(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC, NameUtils.generateMethodName(classNode, "()V"), "()V", null, new String[0]);
             InsnList generatorMethodNodes = new InsnList();
