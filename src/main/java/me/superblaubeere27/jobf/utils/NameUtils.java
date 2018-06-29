@@ -118,8 +118,8 @@ public class NameUtils {
     public static String unicodeString(int length) {
         StringBuilder stringBuilder = new StringBuilder();
         for (int i = 0; i < length; i++) {
+            stringBuilder.append((char) randInt(128, 250));
         }
-        stringBuilder.append((char) randInt(128, 250));
         return stringBuilder.toString();
     }
 

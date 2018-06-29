@@ -13,6 +13,9 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.analysis.Analyzer;
+import org.objectweb.asm.tree.analysis.AnalyzerException;
+import org.objectweb.asm.tree.analysis.BasicInterpreter;
 
 import java.io.*;
 import java.util.*;
@@ -43,6 +46,8 @@ public class JObfImpl {
     private Set<ClassNode> libraryClassnodes = new HashSet<>();
     private List<File> libraryFiles;
     private boolean nameobf;
+    public int computeMode;
+    private boolean invokeDynamic;
 
 //    public static void process(String inFile, String outFile, String logFile) {
 //        JObfImpl inst = new JObfImpl();
@@ -65,12 +70,13 @@ public class JObfImpl {
 //        processors.add(new ShuffleMembersProcessor(this));
     }
 
-    public static void processConsole(String inFile, String outFile, List<File> fileList, String logFile, int mode, boolean packager, boolean nameobf, boolean hwid, byte[] hwidBytes, String packagerMainClass, JObfScript script) {
+    public static void processConsole(String inFile, String outFile, List<File> fileList, String logFile, int mode, boolean packager, boolean nameobf, boolean hwid, boolean invokeDynamic, byte[] hwidBytes, String packagerMainClass, JObfScript script) {
         JObfImpl inst = new JObfImpl();
 
 
         inst.packagerEnabled = packager;
         inst.hwid = hwid;
+        inst.invokeDynamic = invokeDynamic;
         inst.hwidBytes = hwidBytes;
         inst.packager = new Packager();
         inst.packagerMainClass = packagerMainClass;
@@ -320,6 +326,9 @@ public class JObfImpl {
         if (hwid) {
             processors.add(new HWIDProtection(this, hwidBytes));
         }
+        if (invokeDynamic) {
+            processors.add(new InvokeDynamic(this));
+        }
         processors.add(new StringEncryptionProcessor(this));
         processors.add(new NumberObfuscationProcessor(this));
         processors.add(new FlowObfuscator(this));
@@ -327,7 +336,6 @@ public class JObfImpl {
         processors.add(new LineNumberRemover(this));
         processors.add(new ShuffleMembersProcessor(this));
 
-        processors.add(new InvokeDynamic(this));
 
 //        nameObfuscationProcessors.add(new NameObfuscation());
 //        processors.add(new CrasherProcessor(this));
@@ -420,18 +428,27 @@ public class JObfImpl {
                 }
             }
 
+            int processed = 0;
+
             for (Map.Entry<String, ClassNode> stringClassNodeEntry : classes.entrySet()) {
                 String entryName = stringClassNodeEntry.getKey();
                 byte[] entryData;
                 ClassNode cn = stringClassNodeEntry.getValue();
 
                 try {
-                    JObfImpl.log.log(Level.FINE, String.format("Processing %s", entryName));
+                    computeMode = ClassWriter.COMPUTE_MAXS;
+
+                    JObfImpl.log.log(Level.FINE, String.format("(%s/%s), Processing %s", processed, classes.size(), entryName));
+
+
 
                     for (IClassProcessor proc : processors)
                         proc.process(cn, mode);
 
-                    ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
+
+                    ClassWriter writer = new ClassWriter(computeMode
+//                            | ClassWriter.COMPUTE_FRAMES
+                    );
                     cn.accept(writer);
 
                     entryData = writer.toByteArray();
@@ -450,6 +467,8 @@ public class JObfImpl {
                 }
 
 //                JObfImpl.log.log(Level.FINE, "Processed " + entryBuffer.size() + " -> " + entryData.length);
+
+                processed++;
             }
             for (Map.Entry<String, byte[]> stringEntry : files.entrySet()) {
                 String entryName = stringEntry.getKey();
@@ -533,18 +552,20 @@ public class JObfImpl {
         for (IClassProcessor proc : processors)
             proc.process(cn, mode);
 
-//        Analyzer analyzer = new Analyzer(new BasicInterpreter());
-//
-//        for (MethodNode method : cn.methods) {
-//            System.err.println("Verifing " + cn.name + "/" + method.name);
-//            try {
-//                analyzer.analyze(cn.name, method);
-//            } catch (AnalyzerException e) {
-//                e.printStackTrace();
-//            }
-//        }
+        Analyzer analyzer = new Analyzer(new BasicInterpreter());
 
-        ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
+        for (MethodNode method : cn.methods) {
+            System.err.println("Verifing " + cn.name + "/" + method.name);
+            try {
+                analyzer.analyze(cn.name, method);
+            } catch (AnalyzerException e) {
+                e.printStackTrace();
+            }
+        }
+
+        ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS
+//                | ClassWriter.COMPUTE_FRAMES
+        );
         cn.accept(writer);
 
         return workDone ? writer.toByteArray() : cls;

@@ -3,17 +3,14 @@ package me.superblaubeere27.jobf.processors;
 import me.superblaubeere27.jobf.IClassProcessor;
 import me.superblaubeere27.jobf.JObfImpl;
 import me.superblaubeere27.jobf.utils.NameUtils;
-import org.objectweb.asm.Handle;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
+import me.superblaubeere27.jobf.utils.NodeUtils;
+import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
 
 import java.lang.invoke.CallSite;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.reflect.Modifier;
-import java.util.Random;
+import java.util.*;
 
 import static org.objectweb.asm.Opcodes.H_INVOKESTATIC;
 
@@ -25,7 +22,7 @@ public class InvokeDynamic implements IClassProcessor {
         this.inst = inst;
     }
 
-    private static MethodNode bootstrap(ClassNode node) {
+    private static MethodNode bootstrap(FieldNode arrayField, ClassNode node) {
         MethodNode mv;
         {
             mv = new MethodNode(Opcodes.ACC_PRIVATE + Opcodes.ACC_STATIC, NameUtils.generateMethodName(node.name, "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;"), "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;", null, new String[]{"java/lang/NoSuchMethodException", "java/lang/IllegalAccessException"});
@@ -36,7 +33,10 @@ public class InvokeDynamic implements IClassProcessor {
             mv.visitTryCatchBlock(l0, l1, l2, "java/lang/Exception");
             mv.visitLabel(l0);
             mv.visitLineNumber(21, l0);
+            mv.visitFieldInsn(Opcodes.GETSTATIC, node.name, arrayField.name, arrayField.desc);
             mv.visitVarInsn(Opcodes.ALOAD, 1);
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/Integer", "parseInt", "(Ljava/lang/String;)I", false);
+            mv.visitInsn(Opcodes.AALOAD);
             mv.visitLdcInsn(":");
             mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/String", "split", "(Ljava/lang/String;)[Ljava/lang/String;", false);
             mv.visitVarInsn(Opcodes.ASTORE, 3);
@@ -99,8 +99,8 @@ public class InvokeDynamic implements IClassProcessor {
             mv.visitVarInsn(Opcodes.ALOAD, 5);
             mv.visitVarInsn(Opcodes.ALOAD, 6);
             mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/invoke/MethodHandles$Lookup", "findVirtual", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;", false);
-            mv.visitVarInsn(Opcodes.ALOAD, 2);
-            mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/invoke/MethodHandle", "asType", "(Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;", false);
+//            mv.visitVarInsn(Opcodes.ALOAD, 2);
+//            mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/invoke/MethodHandle", "asType", "(Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;", false);
             mv.visitVarInsn(Opcodes.ASTORE, 8);
             Label l13 = new Label();
             mv.visitJumpInsn(Opcodes.GOTO, l13);
@@ -144,32 +144,117 @@ public class InvokeDynamic implements IClassProcessor {
 
     @Override
     public void process(ClassNode classNode, int mode) {
-        if (Modifier.isInterface(classNode.access)) {
+        if (!NodeUtils.isClassValid(classNode)) {
             return;
         }
-        MethodNode bootstrap = bootstrap(classNode);
+
+        FieldNode arrayField = new FieldNode(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC, NameUtils.generateFieldName(classNode), "[Ljava/lang/String;", null, null);
+
+        MethodNode bootstrap = bootstrap(arrayField, classNode);
         Handle bootstrapMethod = new Handle(H_INVOKESTATIC, classNode.name, bootstrap.name,
                 MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class,
                         MethodType.class).toMethodDescriptorString(), false);
 
+        int count = 0;
+        int indexCount = 0;
+
+        HashMap<String, Integer> map = new HashMap<>();
+
         for (MethodNode method : classNode.methods) {
+
+            if (!NodeUtils.isMethodValid(method)) {
+                continue;
+            }
+
             for (AbstractInsnNode abstractInsnNode : method.instructions.toArray()) {
                 if (abstractInsnNode instanceof MethodInsnNode) {
                     MethodInsnNode methodInsnNode = (MethodInsnNode) abstractInsnNode;
 
-//                    if (methodInsnNode.getOpcode() == Opcodes.INVOKEVIRTUAL) {
-//                        method.instructions.insert(methodInsnNode, new InvokeDynamicInsnNode(methodInsnNode.owner.replace('/', '.') + ":" + methodInsnNode.name + ":" + methodInsnNode.desc + ":" + NameUtils.generateSpaceString(2), methodInsnNode.desc, bootstrapMethod));
-//                        method.instructions.remove(methodInsnNode);
-//                    }
-                    if (methodInsnNode.getOpcode() == Opcodes.INVOKESTATIC) {
-                        method.instructions.insert(methodInsnNode, new InvokeDynamicInsnNode(methodInsnNode.owner.replace('/', '.') + ":" + methodInsnNode.name + ":" + methodInsnNode.desc + ":" + NameUtils.unicodeString(1), methodInsnNode.desc, bootstrapMethod));
+                    if (methodInsnNode.getOpcode() == Opcodes.INVOKEVIRTUAL || methodInsnNode.getOpcode() == Opcodes.INVOKEINTERFACE) {
+                        String name = methodInsnNode.owner.replace('/', '.') + ":" + methodInsnNode.name + ":" + methodInsnNode.desc + ":" + NameUtils.generateSpaceString(2);
+                        int index;
+
+                        if (map.containsKey(name)) {
+                            index = map.get(name);
+                        } else {
+                            index = indexCount++;
+                            map.put(name, index);
+                        }
+
+                        method.instructions.insert(methodInsnNode, new InvokeDynamicInsnNode(Integer.toString(index), "(L" + methodInsnNode.owner + ";" + methodInsnNode.desc.substring(1), bootstrapMethod));
                         method.instructions.remove(methodInsnNode);
+                        count++;
+                    }
+                    if (methodInsnNode.getOpcode() == Opcodes.INVOKESTATIC) {
+                        String name = methodInsnNode.owner.replace('/', '.') + ":" + methodInsnNode.name + ":" + methodInsnNode.desc + ":" + NameUtils.generateSpaceString(1);
+                        int index;
+
+                        if (map.containsKey(name)) {
+                            index = map.get(name);
+                        } else {
+                            index = indexCount++;
+                            map.put(name, index);
+                        }
+                        method.instructions.insert(methodInsnNode, new InvokeDynamicInsnNode(Integer.toString(index), methodInsnNode.desc, bootstrapMethod));
+                        method.instructions.remove(methodInsnNode);
+                        count++;
                     }
                 }
             }
         }
+//        System.out.println(count);
 
-        classNode.methods.add(bootstrap);
+
+        if (count > 0) {
+            if (classNode.version < Opcodes.V1_7) {
+                inst.computeMode = ClassWriter.COMPUTE_FRAMES;
+                //            System.out.println("FRAMES");
+            }
+            classNode.version = Opcodes.V1_7;
+
+            MethodNode generatorMethod = new MethodNode(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC, NameUtils.generateMethodName(classNode, "()V"), "()V", null, new String[0]);
+            InsnList generatorMethodNodes = new InsnList();
+            List<Map.Entry<String, Integer>> list = new ArrayList<>(map.entrySet());
+
+            Collections.shuffle(list);
+
+            generatorMethodNodes.add(NodeUtils.generateIntPush(list.size()));
+            generatorMethodNodes.add(new TypeInsnNode(Opcodes.ANEWARRAY, "java/lang/String"));
+            generatorMethodNodes.add(new FieldInsnNode(Opcodes.PUTSTATIC, classNode.name, arrayField.name, arrayField.desc));
+
+            for (Map.Entry<String, Integer> integerStringEntry : list) {
+                generatorMethodNodes.add(new FieldInsnNode(Opcodes.GETSTATIC, classNode.name, arrayField.name, arrayField.desc));
+                generatorMethodNodes.add(NodeUtils.generateIntPush(integerStringEntry.getValue()));
+                generatorMethodNodes.add(new LdcInsnNode(integerStringEntry.getKey()));
+                generatorMethodNodes.add(new InsnNode(Opcodes.AASTORE));
+            }
+
+            generatorMethodNodes.add(new InsnNode(Opcodes.RETURN));
+
+            generatorMethod.instructions = generatorMethodNodes;
+
+            MethodNode clInit = NodeUtils.getMethod(classNode, "<clinit>");
+
+            if (clInit == null) {
+                clInit = new MethodNode(Opcodes.ACC_STATIC, "<clinit>", "()V", null, new String[0]);
+                classNode.methods.add(clInit);
+            }
+            if (clInit.instructions == null)
+                clInit.instructions = new InsnList();
+
+            if (clInit.instructions.getFirst() == null) {
+                clInit.instructions.add(new MethodInsnNode(Opcodes.INVOKESTATIC, classNode.name, generatorMethod.name, generatorMethod.desc, false));
+                clInit.instructions.add(new InsnNode(Opcodes.RETURN));
+            } else {
+                clInit.instructions.insertBefore(clInit.instructions.getFirst(), new MethodInsnNode(Opcodes.INVOKESTATIC, classNode.name, generatorMethod.name, generatorMethod.desc, false));
+            }
+
+
+            classNode.methods.add(bootstrap);
+            classNode.methods.add(generatorMethod);
+            classNode.fields.add(arrayField);
+        }
+
     }
 
 }

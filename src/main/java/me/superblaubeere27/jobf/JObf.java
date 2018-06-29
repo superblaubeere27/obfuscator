@@ -37,6 +37,7 @@ public class JObf {
         parser.accepts("jarIn").withOptionalArg().required();
         parser.accepts("jarOut").withRequiredArg();
         parser.accepts("package").withOptionalArg().describedAs("Encrypts all classes");
+        parser.accepts("invokeDynamic").withOptionalArg().describedAs("Hides method calls.");
         parser.accepts("packagerMainClass").requiredIf("package").availableIf("package").withOptionalArg();
         parser.accepts("mode").withOptionalArg().describedAs("0 = Normal, 1 = Aggressive (Might not work)").ofType(Integer.class).defaultsTo(0);
         parser.accepts("cp").withOptionalArg().describedAs("ClassPath; Only for name obfuscation").ofType(File.class);
@@ -150,7 +151,7 @@ public class JObf {
             JObfScript script = new JObfScript(scriptContent);
 
             try {
-                JObfImpl.processConsole(jarIn, jarOut, fileList, log, mode, options.has("package"), options.has("nameobf"), options.has("hwid"), options.hasArgument("hwid") ? HWID.hexStringToByteArray((String) options.valueOf("hwid")) : HWID.generateHWID(), options.has("package") ? String.valueOf(options.valueOf("packagerMainClass")) : "", script);
+                JObfImpl.processConsole(jarIn, jarOut, fileList, log, mode, options.has("package"), options.has("nameobf"), options.has("hwid"), options.has("invokeDynamic"), options.hasArgument("hwid") ? HWID.hexStringToByteArray((String) options.valueOf("hwid")) : HWID.generateHWID(), options.has("package") ? String.valueOf(options.valueOf("packagerMainClass")) : "", script);
             } catch (Exception e) {
                 System.err.println("ERROR: " + e.getMessage());
                 e.printStackTrace();

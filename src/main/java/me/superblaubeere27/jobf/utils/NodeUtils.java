@@ -190,6 +190,14 @@ public class NodeUtils {
         return i;
     }
 
+    public static boolean isMethodValid(MethodNode method) {
+        return !Modifier.isNative(method.access) && !Modifier.isAbstract(method.access) && method.instructions.size() != 0;
+    }
+
+    public static boolean isClassValid(ClassNode node) {
+        return (node.access & Opcodes.ACC_ENUM) == 0 && (node.access & Opcodes.ACC_INTERFACE) == 0;
+    }
+
 //    public static int getTypeLoad(Type argumentType) {
 //        if (argumentType.getOpcode()) {
 //
