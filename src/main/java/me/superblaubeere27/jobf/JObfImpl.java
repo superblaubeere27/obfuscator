@@ -3,6 +3,7 @@ package me.superblaubeere27.jobf;
 import com.google.common.io.ByteStreams;
 import me.superblaubeere27.jobf.processors.*;
 import me.superblaubeere27.jobf.processors.name.INameObfuscationProcessor;
+import me.superblaubeere27.jobf.processors.name.NameObfuscation;
 import me.superblaubeere27.jobf.processors.packager.Packager;
 import me.superblaubeere27.jobf.util.Util;
 import me.superblaubeere27.jobf.util.script.JObfScript;
@@ -337,7 +338,7 @@ public class JObfImpl {
         processors.add(new ShuffleMembersProcessor(this));
 
 
-//        nameObfuscationProcessors.add(new NameObfuscation());
+        nameObfuscationProcessors.add(new NameObfuscation());
 //        processors.add(new CrasherProcessor(this));
 //        processors.add(new ReferenceProxy(this));
     }
@@ -436,27 +437,42 @@ public class JObfImpl {
                 ClassNode cn = stringClassNodeEntry.getValue();
 
                 try {
-                    computeMode = ClassWriter.COMPUTE_MAXS;
+                    try {
+                        computeMode = ClassWriter.COMPUTE_MAXS;
 
-                    JObfImpl.log.log(Level.FINE, String.format("(%s/%s), Processing %s", processed, classes.size(), entryName));
-
-
-
-                    for (IClassProcessor proc : processors)
-                        proc.process(cn, mode);
+                        JObfImpl.log.log(Level.FINE, String.format("(%s/%s), Processing %s", processed, classes.size(), entryName));
 
 
-                    ClassWriter writer = new ClassWriter(computeMode
+                        if (script == null || script.isObfuscatorEnabled(cn.name)) {
+                            for (IClassProcessor proc : processors)
+                                proc.process(cn, mode);
+                        }
+
+
+                        ClassWriter writer = new ClassWriter(computeMode
 //                            | ClassWriter.COMPUTE_FRAMES
-                    );
-                    cn.accept(writer);
+                        );
+                        cn.accept(writer);
 
-                    entryData = writer.toByteArray();
+                        entryData = writer.toByteArray();
+                    } catch (Exception e) {
+                        ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS
+//                            | ClassWriter.COMPUTE_FRAMES
+                        );
+                        cn.accept(writer);
 
-                    if (packagerEnabled) {
-                        entryName = packager.encryptName(entryName.replace(".class", ""));
-                        entryData = packager.encryptClass(entryData);
+                        entryData = writer.toByteArray();
+                        e.printStackTrace();
                     }
+                    try {
+                        if (packagerEnabled) {
+                            entryName = packager.encryptName(entryName.replace(".class", ""));
+                            entryData = packager.encryptClass(entryData);
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
 
                     ZipEntry newEntry = new ZipEntry(entryName);
                     outJar.putNextEntry(newEntry);

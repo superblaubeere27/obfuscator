@@ -2,10 +2,12 @@ package me.superblaubeere27.jobf.processors;
 
 import me.superblaubeere27.jobf.IClassProcessor;
 import me.superblaubeere27.jobf.JObfImpl;
+import me.superblaubeere27.jobf.utils.NameUtils;
 import me.superblaubeere27.jobf.utils.NodeUtils;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 
+import java.util.HashMap;
 import java.util.Random;
 
 public class FlowObfuscator implements IClassProcessor {
@@ -17,7 +19,7 @@ public class FlowObfuscator implements IClassProcessor {
     }
 
     private static InsnList ifGoto(LabelNode label) {
-        final InsnList insnList = new InsnList();
+        InsnList insnList = new InsnList();
 
         int i = random.nextInt(5);
 
@@ -118,12 +120,118 @@ public class FlowObfuscator implements IClassProcessor {
                 insnList.add(new InsnNode(Opcodes.ATHROW));
                 break;
             }
+            case 7: {
+                int first;
+
+                first = random.nextInt(5) + 1;
+
+                insnList.add(NodeUtils.generateIntPush(first));
+                insnList.add(new JumpInsnNode(Opcodes.IFNE, label));
+                insnList.add(new InsnNode(Opcodes.ACONST_NULL));
+                insnList.add(new InsnNode(Opcodes.ATHROW));
+                break;
+            }
+            case 8: {
+                int first = 0;
+
+
+                insnList.add(NodeUtils.generateIntPush(first));
+                insnList.add(new JumpInsnNode(Opcodes.IFEQ, label));
+                insnList.add(new InsnNode(Opcodes.ACONST_NULL));
+                insnList.add(new InsnNode(Opcodes.ATHROW));
+                break;
+            }
+            case 9: {
+                int first = 0;
+
+
+                insnList.add(NodeUtils.generateIntPush(first));
+                insnList.add(new JumpInsnNode(Opcodes.IFEQ, label));
+                insnList.add(new InsnNode(Opcodes.ACONST_NULL));
+                insnList.add(new InsnNode(Opcodes.ATHROW));
+                break;
+            }
+        }
+        for (int j = 0; j < random.nextInt(2) + 1; j++) {
+            insnList = NumberObfuscationProcessor.obfuscateInsnList(insnList);
         }
         return insnList;
     }
 
+    public static MethodNode ifWrapper(int opcode) {
+        if (opcode >= Opcodes.IFEQ && opcode <= Opcodes.IFLE) {
+            MethodNode method = new MethodNode(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC, "", "(I)Z", null, new String[0]);
+            LabelNode label1 = new LabelNode();
+            LabelNode label2 = new LabelNode();
+            method.instructions.add(new VarInsnNode(Opcodes.ILOAD, 0));
+            method.instructions.add(new JumpInsnNode(opcode, label1));
+            method.instructions.add(new InsnNode(Opcodes.ICONST_1));
+            method.instructions.add(new JumpInsnNode(Opcodes.GOTO, label2));
+            method.instructions.add(label1);
+            method.instructions.add(new FrameNode(Opcodes.F_NEW, 1, new Object[]{Opcodes.INTEGER}, 0, new Object[]{}));
+            method.instructions.add(new InsnNode(Opcodes.ICONST_0));
+            method.instructions.add(label2);
+            method.instructions.add(new FrameNode(Opcodes.F_NEW, 1, new Object[]{Opcodes.INTEGER}, 1, new Object[]{Opcodes.INTEGER}));
+            method.instructions.add(new InsnNode(Opcodes.IRETURN));
+            return method;
+        }
+        if (opcode >= Opcodes.IFNULL && opcode <= Opcodes.IFNONNULL) {
+            MethodNode method = new MethodNode(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC, "", "(Ljava/lang/Object;)Z", null, new String[0]);
+            LabelNode label1 = new LabelNode();
+            LabelNode label2 = new LabelNode();
+            method.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+            method.instructions.add(new JumpInsnNode(opcode, label1));
+            method.instructions.add(new InsnNode(Opcodes.ICONST_1));
+            method.instructions.add(new JumpInsnNode(Opcodes.GOTO, label2));
+            method.instructions.add(label1);
+            method.instructions.add(new FrameNode(Opcodes.F_NEW, 1, new Object[]{"java/lang/Object"}, 0, new Object[]{}));
+            method.instructions.add(new InsnNode(Opcodes.ICONST_0));
+            method.instructions.add(label2);
+            method.instructions.add(new FrameNode(Opcodes.F_NEW, 1, new Object[]{"java/lang/Object"}, 1, new Object[]{Opcodes.INTEGER}));
+            method.instructions.add(new InsnNode(Opcodes.IRETURN));
+            return method;
+        }
+        if (opcode >= Opcodes.IF_ACMPEQ && opcode <= Opcodes.IF_ACMPNE) {
+            MethodNode method = new MethodNode(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC, "", "(Ljava/lang/Object;Ljava/lang/Object;)Z", null, new String[0]);
+            LabelNode label1 = new LabelNode();
+            LabelNode label2 = new LabelNode();
+            method.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+            method.instructions.add(new VarInsnNode(Opcodes.ALOAD, 1));
+            method.instructions.add(new JumpInsnNode(opcode, label1));
+            method.instructions.add(new InsnNode(Opcodes.ICONST_1));
+            method.instructions.add(new JumpInsnNode(Opcodes.GOTO, label2));
+            method.instructions.add(label1);
+            method.instructions.add(new FrameNode(Opcodes.F_NEW, 2, new Object[]{"java/lang/Object", "java/lang/Object"}, 0, new Object[]{}));
+            method.instructions.add(new InsnNode(Opcodes.ICONST_0));
+            method.instructions.add(label2);
+            method.instructions.add(new FrameNode(Opcodes.F_NEW, 2, new Object[]{"java/lang/Object", "java/lang/Object"}, 1, new Object[]{Opcodes.INTEGER}));
+            method.instructions.add(new InsnNode(Opcodes.IRETURN));
+            return method;
+        }
+        if (opcode >= Opcodes.IF_ICMPEQ && opcode <= Opcodes.IF_ICMPLE) {
+            MethodNode method = new MethodNode(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC, "", "(II)Z", null, new String[0]);
+            LabelNode label1 = new LabelNode();
+            LabelNode label2 = new LabelNode();
+            method.instructions.add(new VarInsnNode(Opcodes.ILOAD, 0));
+            method.instructions.add(new VarInsnNode(Opcodes.ILOAD, 1));
+            method.instructions.add(new JumpInsnNode(opcode, label1));
+            method.instructions.add(new InsnNode(Opcodes.ICONST_1));
+            method.instructions.add(new JumpInsnNode(Opcodes.GOTO, label2));
+            method.instructions.add(label1);
+            method.instructions.add(new FrameNode(Opcodes.F_NEW, 2, new Object[]{Opcodes.INTEGER, Opcodes.INTEGER}, 0, new Object[]{}));
+            method.instructions.add(new InsnNode(Opcodes.ICONST_0));
+            method.instructions.add(label2);
+            method.instructions.add(new FrameNode(Opcodes.F_NEW, 2, new Object[]{Opcodes.INTEGER, Opcodes.INTEGER}, 1, new Object[]{Opcodes.INTEGER}));
+            method.instructions.add(new InsnNode(Opcodes.IRETURN));
+            return method;
+        }
+        return null;
+    }
+
     @Override
     public void process(ClassNode node, int mode) {
+        HashMap<Integer, MethodNode> jumpMethodMap = new HashMap<>();
+
         for (MethodNode method : node.methods) {
             for (AbstractInsnNode abstractInsnNode : method.instructions.toArray()) {
                 if (abstractInsnNode instanceof JumpInsnNode && abstractInsnNode.getOpcode() == Opcodes.GOTO) {
@@ -138,6 +246,28 @@ public class FlowObfuscator implements IClassProcessor {
                     method.instructions.insert(insnNode, insnList);
                     method.instructions.remove(insnNode);
                 }
+                if (abstractInsnNode instanceof JumpInsnNode && (abstractInsnNode.getOpcode() >= Opcodes.IFEQ && abstractInsnNode.getOpcode() <= Opcodes.IF_ACMPNE || abstractInsnNode.getOpcode() >= Opcodes.IFNULL && abstractInsnNode.getOpcode() <= Opcodes.IFNONNULL)) {
+                    JumpInsnNode insnNode = (JumpInsnNode) abstractInsnNode;
+
+                    MethodNode wrapper = jumpMethodMap.get(insnNode.getOpcode());
+
+                    if (wrapper == null) {
+                        wrapper = ifWrapper(insnNode.getOpcode());
+
+                        if (wrapper != null) {
+                            wrapper.name = NameUtils.generateMethodName(node, wrapper.desc);
+                            jumpMethodMap.put(insnNode.getOpcode(), wrapper);
+                        }
+                    }
+
+                    if (wrapper != null) {
+                        final InsnList insnList = new InsnList();
+                        insnList.add(NodeUtils.methodCall(node, wrapper));
+                        insnList.add(new JumpInsnNode(Opcodes.IFEQ, insnNode.label));
+                        method.instructions.insert(insnNode, insnList);
+                        method.instructions.remove(insnNode);
+                    }
+                }
 //                if (abstractInsnNode instanceof MethodInsnNode || abstractInsnNode instanceof FieldInsnNode) {
 //                    method.instructions.insertBefore(abstractInsnNode, new LdcInsnNode(""));
 //                    method.instructions.insertBefore(abstractInsnNode, new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/String", "length", "()I", false));
@@ -146,6 +276,9 @@ public class FlowObfuscator implements IClassProcessor {
             }
 //            method.desc = method.desc.replace('Z', 'I');
         }
+
+        node.methods.addAll(jumpMethodMap.values());
+
         inst.setWorkDone();
     }
 }

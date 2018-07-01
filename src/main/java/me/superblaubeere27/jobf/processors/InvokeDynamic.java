@@ -185,7 +185,7 @@ public class InvokeDynamic implements IClassProcessor {
                             map.put(name, index);
                         }
 
-                        method.instructions.insert(methodInsnNode, new InvokeDynamicInsnNode(Integer.toString(index), "(L" + methodInsnNode.owner + ";" + methodInsnNode.desc.substring(1), bootstrapMethod));
+                        method.instructions.insert(methodInsnNode, new InvokeDynamicInsnNode(Integer.toString(index), (methodInsnNode.owner.startsWith("[") ? "(" : "(L") + methodInsnNode.owner + (methodInsnNode.owner.endsWith(";") ? "" : ";") + methodInsnNode.desc.substring(1), bootstrapMethod));
                         method.instructions.remove(methodInsnNode);
                         count++;
                     }

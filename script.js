@@ -6,3 +6,6 @@ function isRemappingEnabledForClass(name) {
 
     return true;
 }
+function isObfuscatorEnabledForClass(name) {
+    return !name.contains("netty");
+}

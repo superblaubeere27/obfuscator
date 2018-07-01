@@ -198,6 +198,22 @@ public class NodeUtils {
         return (node.access & Opcodes.ACC_ENUM) == 0 && (node.access & Opcodes.ACC_INTERFACE) == 0;
     }
 
+    public static AbstractInsnNode methodCall(ClassNode classNode, MethodNode methodNode) {
+        int opcode = Opcodes.INVOKEVIRTUAL;
+
+        if (Modifier.isInterface(classNode.access)) {
+            opcode = Opcodes.INVOKEINTERFACE;
+        }
+        if (Modifier.isStatic(methodNode.access)) {
+            opcode = Opcodes.INVOKESTATIC;
+        }
+        if (methodNode.name.startsWith("<")) {
+            opcode = Opcodes.INVOKESPECIAL;
+        }
+
+        return new MethodInsnNode(opcode, classNode.name, methodNode.name, methodNode.desc, false);
+    }
+
 //    public static int getTypeLoad(Type argumentType) {
 //        if (argumentType.getOpcode()) {
 //

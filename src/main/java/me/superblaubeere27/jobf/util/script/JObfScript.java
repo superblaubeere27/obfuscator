@@ -32,4 +32,17 @@ public class JObfScript {
         }
     }
 
+    public boolean isObfuscatorEnabled(String className) {
+        try {
+            Invocable invocable = (Invocable) jsEngine;
+
+            return (boolean) invocable.invokeFunction("isObfuscatorEnabledForClass", className);
+        } catch (NoSuchMethodException e) {
+            return true;
+        } catch (ScriptException e) {
+            e.printStackTrace();
+            return true;
+        }
+    }
+
 }
