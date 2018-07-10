@@ -1,0 +1,36 @@
+{
+  "ShuffleMembers": {
+    "Enabled": true
+  },
+  "InvokeDynamic": {
+    "Enabled": true
+  },
+  "LineNumberRemover": {
+    "Enabled": true,
+    "Rename local variables": true,
+    "Remove Line Numbers": true,
+    "Remove Debug Names": true,
+    "Add Local Variables": true
+  },
+  "FlowObfuscator": {
+    "Enabled": true,
+    "Replace GOTO": true,
+    "Replace If": true,
+    "Bad POP": true
+  },
+  "HideMembers": {
+    "Enabled": true
+  },
+  "StringEncryption": {
+    "Enabled": true,
+    "HideStrings": true
+  },
+  "NumberObfuscation": {
+    "Enabled": true,
+    "Extract to Array": true,
+    "Obfuscate Zero": true,
+    "Shift": true,
+    "And": true,
+    "Multiple Instructions": true
+  }
+}

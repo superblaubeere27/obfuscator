@@ -32,7 +32,7 @@ public class CrasherProcessor implements IClassProcessor {
     }
 
     @Override
-    public void process(ClassNode node, int mode) {
+    public void process(ClassNode node) {
         if (Modifier.isInterface(node.access)) return;
 
         for (MethodNode method : node.methods) {

@@ -14,8 +14,7 @@ public class JObfScript {
             jsEngine = new ScriptEngineManager().getEngineByName("nashorn");
             jsEngine.eval(script);
         } catch (Exception e) {
-            System.err.println("Failed to compile JS script " + e.getLocalizedMessage());
-            jsEngine = null;
+            throw new IllegalStateException("Failed to compile Script", e);
         }
     }
 

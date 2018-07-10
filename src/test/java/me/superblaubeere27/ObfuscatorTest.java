@@ -27,9 +27,8 @@ public class ObfuscatorTest {
             File input = File.createTempFile("obf_", ".jar");
 //            Files.copy(new URL("https://github.com/SB27Team/JavaFeatureTest/raw/master/JavaFeatureTest.jar").openStream(), input.toPath());
             ByteStreams.copy(new URL("https://github.com/SB27Team/JavaFeatureTest/raw/master/JavaFeatureTest.jar").openStream(), new FileOutputStream(input));
-            JObfImpl impl = new JObfImpl();
-            impl.addProcessors();
-            impl.processJar(input.getAbsolutePath(), (obfuscatedFile = File.createTempFile("obf_", ".jar")).getAbsolutePath(), 0);
+//            impl.addProcessors();
+            JObfImpl.INSTANCE.processJar(input.getAbsolutePath(), (obfuscatedFile = File.createTempFile("obf_", ".jar")).getAbsolutePath(), 0);
         } catch (IOException e) {
             e.printStackTrace();
         }

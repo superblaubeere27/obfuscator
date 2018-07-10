@@ -540,7 +540,7 @@ public class Packager {
         cw.visitEnd();
 
         for (IClassProcessor processor : JObfImpl.processors) {
-            processor.process(cw, 0);
+            processor.process(cw);
         }
 
         ClassWriter writer = new ClassWriter(0);

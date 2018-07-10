@@ -19,13 +19,13 @@ public class NameUtils {
     private static Map<String, Integer> USED_FIELDNAMES = new HashMap<>();
 
     //    private static boolean iL = true;
-    private static int iL_uniqueInt = 0;
+    private static int localVars = Short.MAX_VALUE;
 
     private static Random random = new Random();
     private static int METHODS = 0;
     private static int FIELDS = 0;
 
-    public static int randInt(int min, int max) {
+    private static int randInt(int min, int max) {
         return random.nextInt(max - min) + min;
     }
 
@@ -108,7 +108,7 @@ public class NameUtils {
     }
 
     public static String generateLocalVariableName() {
-        return Util.toIl((int) (Math.random() * Short.MAX_VALUE));
+        return Util.toIl(localVars--);
     }
 
     private static int getLenght() {

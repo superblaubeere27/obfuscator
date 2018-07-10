@@ -2,6 +2,9 @@ package me.superblaubeere27.jobf.processors;
 
 import me.superblaubeere27.jobf.IClassProcessor;
 import me.superblaubeere27.jobf.JObfImpl;
+import me.superblaubeere27.jobf.util.values.BooleanValue;
+import me.superblaubeere27.jobf.util.values.DeprecationLevel;
+import me.superblaubeere27.jobf.util.values.EnabledValue;
 import me.superblaubeere27.jobf.utils.NameUtils;
 import me.superblaubeere27.jobf.utils.NodeUtils;
 import org.objectweb.asm.Opcodes;
@@ -13,6 +16,13 @@ import java.util.Random;
 public class FlowObfuscator implements IClassProcessor {
     private static Random random = new Random();
     private JObfImpl inst;
+
+    private static final String PROCESSOR_NAME = "FlowObfuscator";
+
+    private EnabledValue enabled = new EnabledValue(PROCESSOR_NAME, DeprecationLevel.GOOD, true);
+    private BooleanValue replaceGoto = new BooleanValue(PROCESSOR_NAME, "Replace GOTO", DeprecationLevel.GOOD, true);
+    private BooleanValue replaceIf = new BooleanValue(PROCESSOR_NAME, "Replace If", DeprecationLevel.GOOD, true);
+    private BooleanValue badPop = new BooleanValue(PROCESSOR_NAME, "Bad POP", DeprecationLevel.GOOD, true);
 
     public FlowObfuscator(JObfImpl inst) {
         this.inst = inst;
@@ -229,24 +239,26 @@ public class FlowObfuscator implements IClassProcessor {
     }
 
     @Override
-    public void process(ClassNode node, int mode) {
+    public void process(ClassNode node) {
+        if (!enabled.getObject()) return;
+
         HashMap<Integer, MethodNode> jumpMethodMap = new HashMap<>();
 
         for (MethodNode method : node.methods) {
             for (AbstractInsnNode abstractInsnNode : method.instructions.toArray()) {
-                if (abstractInsnNode instanceof JumpInsnNode && abstractInsnNode.getOpcode() == Opcodes.GOTO) {
+                if (badPop.getObject() && abstractInsnNode instanceof JumpInsnNode && abstractInsnNode.getOpcode() == Opcodes.GOTO) {
                     method.instructions.insertBefore(abstractInsnNode, new LdcInsnNode(""));
                     method.instructions.insertBefore(abstractInsnNode, new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/String", "length", "()I", false));
                     method.instructions.insertBefore(abstractInsnNode, new InsnNode(Opcodes.POP));
                 }
-                if (abstractInsnNode instanceof JumpInsnNode && abstractInsnNode.getOpcode() == Opcodes.GOTO) {
+                if (replaceIf.getObject() && abstractInsnNode instanceof JumpInsnNode && abstractInsnNode.getOpcode() == Opcodes.GOTO) {
                     JumpInsnNode insnNode = (JumpInsnNode) abstractInsnNode;
                     final InsnList insnList = new InsnList();
                     insnList.add(ifGoto(insnNode.label));
                     method.instructions.insert(insnNode, insnList);
                     method.instructions.remove(insnNode);
                 }
-                if (abstractInsnNode instanceof JumpInsnNode && (abstractInsnNode.getOpcode() >= Opcodes.IFEQ && abstractInsnNode.getOpcode() <= Opcodes.IF_ACMPNE || abstractInsnNode.getOpcode() >= Opcodes.IFNULL && abstractInsnNode.getOpcode() <= Opcodes.IFNONNULL)) {
+                if (replaceGoto.getObject() && abstractInsnNode instanceof JumpInsnNode && (abstractInsnNode.getOpcode() >= Opcodes.IFEQ && abstractInsnNode.getOpcode() <= Opcodes.IF_ACMPNE || abstractInsnNode.getOpcode() >= Opcodes.IFNULL && abstractInsnNode.getOpcode() <= Opcodes.IFNONNULL)) {
                     JumpInsnNode insnNode = (JumpInsnNode) abstractInsnNode;
 
                     MethodNode wrapper = jumpMethodMap.get(insnNode.getOpcode());

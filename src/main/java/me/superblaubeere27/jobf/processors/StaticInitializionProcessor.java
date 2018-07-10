@@ -19,7 +19,7 @@ public class StaticInitializionProcessor implements IClassProcessor {
     }
 
     @Override
-    public void process(ClassNode node, int mode) {
+    public void process(ClassNode node) {
         HashMap<FieldNode, Object> objs = new HashMap<>();
         for (FieldNode field : node.fields) {
             if (field.value != null) {

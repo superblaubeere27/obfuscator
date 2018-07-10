@@ -8,13 +8,18 @@
 
     <groupId>me.superblaubeere27</groupId>
     <artifactId>obfuscator</artifactId>
-    <version>1.5</version>
+    <version>1.6</version>
 
     <dependencies>
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm-debug-all</artifactId>
             <version>6.0_BETA</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fifesoft</groupId>
+            <artifactId>rsyntaxtextarea</artifactId>
+            <version>2.6.1</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/biz.aQute/bndlib -->
 

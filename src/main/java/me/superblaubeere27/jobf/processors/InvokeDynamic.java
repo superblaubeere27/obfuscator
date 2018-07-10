@@ -2,6 +2,8 @@ package me.superblaubeere27.jobf.processors;
 
 import me.superblaubeere27.jobf.IClassProcessor;
 import me.superblaubeere27.jobf.JObfImpl;
+import me.superblaubeere27.jobf.util.values.DeprecationLevel;
+import me.superblaubeere27.jobf.util.values.EnabledValue;
 import me.superblaubeere27.jobf.utils.NameUtils;
 import me.superblaubeere27.jobf.utils.NodeUtils;
 import org.objectweb.asm.*;
@@ -17,6 +19,9 @@ import static org.objectweb.asm.Opcodes.H_INVOKESTATIC;
 public class InvokeDynamic implements IClassProcessor {
     private static Random random = new Random();
     private JObfImpl inst;
+    private static final String PROCESSOR_NAME = "InvokeDynamic";
+
+    private EnabledValue enabled = new EnabledValue(PROCESSOR_NAME, DeprecationLevel.OK, false);
 
     public InvokeDynamic(JObfImpl inst) {
         this.inst = inst;
@@ -143,7 +148,9 @@ public class InvokeDynamic implements IClassProcessor {
     }
 
     @Override
-    public void process(ClassNode classNode, int mode) {
+    public void process(ClassNode classNode) {
+        if (!enabled.getObject()) return;
+
         if (!NodeUtils.isClassValid(classNode)) {
             return;
         }

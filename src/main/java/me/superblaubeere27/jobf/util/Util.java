@@ -3,6 +3,7 @@ package me.superblaubeere27.jobf.util;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import me.superblaubeere27.jobf.util.values.DeprecationLevel;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
@@ -70,6 +71,19 @@ public class Util {
             total += r;
         }
         return total;
+    }
+
+    public static Color getColor(DeprecationLevel deprecationLevel) {
+        switch (deprecationLevel) {
+            case GOOD:
+                return null;
+            case OK:
+                return Color.yellow;
+            case BAD:
+                return Color.red;
+            default:
+                return null;
+        }
     }
 
     public static String prettyGson(final JsonObject newObj) {

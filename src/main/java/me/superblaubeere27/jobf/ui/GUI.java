@@ -1,22 +1,31 @@
 package me.superblaubeere27.jobf.ui;
 
-import com.google.gson.JsonParser;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
-import me.superblaubeere27.jobf.Configuration;
+import me.superblaubeere27.jobf.JObf;
 import me.superblaubeere27.jobf.JObfImpl;
 import me.superblaubeere27.jobf.util.JObfFileFilter;
 import me.superblaubeere27.jobf.util.JarFileFilter;
 import me.superblaubeere27.jobf.util.Util;
+import me.superblaubeere27.jobf.util.script.JObfScript;
+import me.superblaubeere27.jobf.util.values.*;
+import me.superblaubeere27.jobf.utils.Template;
+import me.superblaubeere27.jobf.utils.Templates;
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rsyntaxtextarea.Theme;
+import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
-import java.util.ResourceBundle;
+import java.nio.file.Paths;
+import java.util.*;
 
 public class GUI extends JFrame {
     public JTextArea logArea;
@@ -27,32 +36,25 @@ public class GUI extends JFrame {
     private JTextField outputTextField;
     private JButton outputBrowseButton;
     private JButton obfuscateButton;
-    private JTabbedPane tabbedPane2;
-    private JCheckBox flowObfuscatorEnabled;
-    private JCheckBox informationRemoverEnabled;
-    private JCheckBox numberObfuscatorEnabled;
-    private JCheckBox hiderEnabled;
-    private JCheckBox shuffleMembersEnabled;
-    private JCheckBox staticinitializionProtectorEnabled;
-    private JCheckBox stringEncryptionEnabled;
-    private JButton lightButton;
-    private JButton mediumButton;
-    private JButton heavyButton;
-    private JButton aggressiveButton;
     private JButton buildButton;
     private JButton loadButton;
     private JButton saveButton;
     private JCheckBox prettyPrintCheckBox;
     private JTextArea configPanel;
-    private JCheckBox referenceProxyEnabled;
+    private JTabbedPane processorOptions;
+    private RSyntaxTextArea scriptArea;
+    private JList<Template> templates;
+    private JButton loadTemplateButton;
+    private JCheckBox autoScroll;
 
     public GUI() {
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setContentPane(panel1);
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         setSize((int) (screenSize.getWidth() / 2), (int) (screenSize.getHeight() / 2));
         setLocationRelativeTo(null);
         setVisible(true);
+        setTitle(JObf.VERSION);
 
         inputBrowseButton.addActionListener(e -> {
             String file = Util.chooseFile(null, GUI.this, new JarFileFilter());
@@ -85,55 +87,125 @@ public class GUI extends JFrame {
             if (name != null) {
                 buildConfig();
                 try {
-                    Configuration configuration = new Configuration().fromJson(new JsonParser().parse(new String(Files.readAllBytes(new File(name).toPath()))).getAsJsonObject());
-                    applyConfig(configuration);
+                    Configuration configuration = ConfigManager.loadConfig(new String(Files.readAllBytes(Paths.get(name)), "UTF-8"));
+                    inputTextField.setText(configuration.getInput());
+                    outputTextField.setText(configuration.getOutput());
+                    scriptArea.setText(configuration.getScript());
+                    initValues();
+                    System.gc();
                 } catch (IOException e1) {
                     e1.printStackTrace();
                     JOptionPane.showMessageDialog(GUI.this, e1.toString(), "ERROR", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
+        Object[] tmplts = Templates.getTemplates().toArray();
+        Template[] templatesArray = Arrays.copyOf(tmplts, tmplts.length, Template[].class);
+        templates.setListData(templatesArray);
+        try {
+            Theme.load(GUI.class.getResourceAsStream("/theme.xml")).apply(scriptArea);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        scriptArea.setText("function isRemappingEnabledForClass(name) {\n" +
+                "    return false;\n" +
+                "}\n" +
+                "function isObfuscatorEnabledForClass(name) {\n" +
+                "    return true;\n" +
+                "}");
+        initValues();
+        loadTemplateButton.addActionListener(e -> {
+            if (templates.getSelectedIndex() != -1) {
+                Configuration config = null;
+                config = ConfigManager.loadConfig(templates.getSelectedValue().getJson());
+                initValues();
+                if (config.getScript() != null && !config.getScript().isEmpty()) {
+                    scriptArea.setText(config.getScript());
+                }
+            } else {
+                JOptionPane.showMessageDialog(GUI.this, "Maybe you should select a template before applying it :thinking:", "Hmmmm...", JOptionPane.ERROR_MESSAGE);
+            }
+        });
     }
 
-    private void applyConfig(Configuration configuration) {
-        Configuration config = new Configuration();
+    public void scrollDown() {
+        if (this.autoScroll.isSelected()) {
+            this.logArea.setCaretPosition(this.logArea.getDocument().getLength());
+        }
 
-        flowObfuscatorEnabled.setSelected(configuration.isFlowObfuscatorEnabled);
-        referenceProxyEnabled.setSelected(configuration.isReferenceProxyEnabled);
-        hiderEnabled.setSelected(configuration.isHiderEnabled);
-        informationRemoverEnabled.setSelected(config.isInformationRemoverEnabled);
-        numberObfuscatorEnabled.setSelected(configuration.isNumberObfuscatorEnabled);
-        shuffleMembersEnabled.setSelected(configuration.isShuffleMembersEnabled);
-        staticinitializionProtectorEnabled.setSelected(configuration.isStaticInitializionProtectorEnabled);
-        stringEncryptionEnabled.setSelected(configuration.isStringEncryptionEnabled);
-
-        // TODO ADD SETTINGS
     }
+
+    private void initValues() {
+        processorOptions.removeAll();
+        HashMap<String, ArrayList<Value<?>>> ownerValueMap = new HashMap<>();
+
+        for (Value<?> value : ValueManager.getValues()) {
+            if (!ownerValueMap.containsKey(value.getOwner())) {
+                ownerValueMap.put(value.getOwner(), new ArrayList<>());
+            }
+            ownerValueMap.get(value.getOwner()).add(value);
+        }
+
+//        for (Map.Entry<String, ArrayList<Value<?>>> stringArrayListEntry : ownerValueMap.entrySet()) {
+        ownerValueMap.entrySet().stream().sorted(Comparator.comparingInt(entry -> -entry.getValue().size())).forEach(entry -> {
+            JPanel panel = new JPanel();
+            int rows = 0;
+
+            for (Value<?> value : entry.getValue()) {
+                if (value instanceof BooleanValue) {
+                    BooleanValue booleanValue = (BooleanValue) value;
+
+                    JCheckBox checkBox = new JCheckBox(value.getName(), booleanValue.getObject());
+                    checkBox.addActionListener(event -> booleanValue.setObject(checkBox.isSelected()));
+                    panel.add(checkBox);
+
+                    Color c = Util.getColor(booleanValue.getDeprecation());
+
+                    if (c != null) {
+                        checkBox.setForeground(c);
+                    }
+
+                    rows++;
+                }
+                if (value instanceof StringValue) {
+                    StringValue stringValue = (StringValue) value;
+
+                    JTextField textBox = new JTextField(stringValue.getObject());
+                    textBox.addActionListener(event -> stringValue.setObject(textBox.getText()));
+
+
+                    Color c = Util.getColor(stringValue.getDeprecation());
+
+                    if (c != null) {
+                        textBox.setForeground(c);
+                    }
+                    panel.add(new JLabel(stringValue.getName() + ":"));
+                    panel.add(textBox);
+
+                    rows += 2;
+                }
+            }
+            panel.setLayout(new GridLayout(rows, 1));
+            JPanel p1 = new JPanel();
+            p1.setLayout(new FlowLayout(FlowLayout.LEFT));
+            p1.add(panel);
+
+            processorOptions.addTab(entry.getKey(), p1);
+        });
+
+//            }
+
+//        }
+    }
+
 
     private void buildConfig() {
-        configPanel.setText(prettyPrintCheckBox.isSelected() ? Util.prettyGson(createConfig().toJson()) : createConfig().toJson().toString());
+        configPanel.setText(ConfigManager.generateConfig(new Configuration(inputTextField.getText(), outputTextField.getText(), scriptArea.getText()), prettyPrintCheckBox.isSelected()));
     }
 
-    private Configuration createConfig() {
-        Configuration config = new Configuration();
-
-        config.isFlowObfuscatorEnabled = flowObfuscatorEnabled.isSelected();
-        config.isHiderEnabled = hiderEnabled.isSelected();
-        config.isInformationRemoverEnabled = informationRemoverEnabled.isSelected();
-        config.isNumberObfuscatorEnabled = numberObfuscatorEnabled.isSelected();
-        config.isShuffleMembersEnabled = shuffleMembersEnabled.isSelected();
-        config.isStaticInitializionProtectorEnabled = staticinitializionProtectorEnabled.isSelected();
-        config.isStringEncryptionEnabled = stringEncryptionEnabled.isSelected();
-
-        // TODO ADD SETTINGS
-
-        return config;
-    }
 
     private void startObfuscator() {
-        Configuration config = createConfig();
-        JObfImpl impl = new JObfImpl();
-        impl.loadConfig(config);
+//        impl.loadConfig(config);
 
         File in = new File(inputTextField.getText());
 
@@ -142,7 +214,24 @@ public class GUI extends JFrame {
             return;
         }
         try {
-            impl.processJar(inputTextField.getText(), outputTextField.getText(), 0);
+            try {
+                JObfImpl.INSTANCE.script = new JObfScript(scriptArea.getText());
+            } catch (Exception e) {
+                StringWriter stringWriter = new StringWriter();
+                e.printStackTrace(new PrintWriter(stringWriter));
+                JOptionPane.showMessageDialog(this, stringWriter);
+                return;
+            }
+            new Thread(() -> {
+                obfuscateButton.setEnabled(false);
+                try {
+                    JObfImpl.INSTANCE.processJar(inputTextField.getText(), outputTextField.getText(), 0);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    JOptionPane.showMessageDialog(this, e.toString(), "ERROR", JOptionPane.ERROR_MESSAGE);
+                }
+                obfuscateButton.setEnabled(true);
+            }, "Obfuscator thread").start();
         } catch (Exception e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this, e.toString(), "ERROR", JOptionPane.ERROR_MESSAGE);
@@ -192,119 +281,62 @@ public class GUI extends JFrame {
         final JPanel panel3 = new JPanel();
         panel3.setLayout(new GridLayoutManager(1, 1, new Insets(0, 0, 0, 0), -1, -1));
         tabbedPane1.addTab("Processor", panel3);
-        tabbedPane2 = new JTabbedPane();
-        panel3.add(tabbedPane2, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, new Dimension(200, 200), null, 0, false));
+        processorOptions = new JTabbedPane();
+        panel3.add(processorOptions, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, new Dimension(200, 200), null, 0, false));
         final JPanel panel4 = new JPanel();
-        panel4.setLayout(new GridLayoutManager(5, 1, new Insets(0, 0, 0, 0), -1, -1));
-        tabbedPane2.addTab("Preset", panel4);
-        lightButton = new JButton();
-        lightButton.setText("Light");
-        panel4.add(lightButton, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        final Spacer spacer2 = new Spacer();
-        panel4.add(spacer2, new GridConstraints(4, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
-        mediumButton = new JButton();
-        mediumButton.setText("Medium");
-        panel4.add(mediumButton, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        heavyButton = new JButton();
-        heavyButton.setText("Heavy");
-        panel4.add(heavyButton, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        aggressiveButton = new JButton();
-        aggressiveButton.setText("Aggressive");
-        panel4.add(aggressiveButton, new GridConstraints(3, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        panel4.setLayout(new GridLayoutManager(1, 1, new Insets(0, 0, 0, 0), -1, -1));
+        processorOptions.addTab("Untitled", panel4);
         final JPanel panel5 = new JPanel();
-        panel5.setLayout(new GridLayoutManager(2, 1, new Insets(0, 0, 0, 0), -1, -1));
-        tabbedPane2.addTab("FlowObfuscator", panel5);
-        flowObfuscatorEnabled = new JCheckBox();
-        this.$$$loadButtonText$$$(flowObfuscatorEnabled, ResourceBundle.getBundle("strings").getString("enabled"));
-        panel5.add(flowObfuscatorEnabled, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        final Spacer spacer3 = new Spacer();
-        panel5.add(spacer3, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
-        final JPanel panel6 = new JPanel();
-        panel6.setLayout(new GridLayoutManager(2, 1, new Insets(0, 0, 0, 0), -1, -1));
-        tabbedPane2.addTab("InformationRemover", panel6);
-        informationRemoverEnabled = new JCheckBox();
-        this.$$$loadButtonText$$$(informationRemoverEnabled, ResourceBundle.getBundle("strings").getString("enabled"));
-        panel6.add(informationRemoverEnabled, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        final Spacer spacer4 = new Spacer();
-        panel6.add(spacer4, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
-        final JPanel panel7 = new JPanel();
-        panel7.setLayout(new GridLayoutManager(2, 1, new Insets(0, 0, 0, 0), -1, -1));
-        tabbedPane2.addTab("NumberObfuscator", panel7);
-        numberObfuscatorEnabled = new JCheckBox();
-        this.$$$loadButtonText$$$(numberObfuscatorEnabled, ResourceBundle.getBundle("strings").getString("enabled"));
-        panel7.add(numberObfuscatorEnabled, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        final Spacer spacer5 = new Spacer();
-        panel7.add(spacer5, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
-        final JPanel panel8 = new JPanel();
-        panel8.setLayout(new GridLayoutManager(2, 1, new Insets(0, 0, 0, 0), -1, -1));
-        tabbedPane2.addTab("Hider", panel8);
-        hiderEnabled = new JCheckBox();
-        this.$$$loadButtonText$$$(hiderEnabled, ResourceBundle.getBundle("strings").getString("enabled"));
-        panel8.add(hiderEnabled, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        final Spacer spacer6 = new Spacer();
-        panel8.add(spacer6, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
-        final JPanel panel9 = new JPanel();
-        panel9.setLayout(new GridLayoutManager(2, 1, new Insets(0, 0, 0, 0), -1, -1));
-        tabbedPane2.addTab("ShuffleMembers", panel9);
-        shuffleMembersEnabled = new JCheckBox();
-        this.$$$loadButtonText$$$(shuffleMembersEnabled, ResourceBundle.getBundle("strings").getString("enabled"));
-        panel9.add(shuffleMembersEnabled, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        final Spacer spacer7 = new Spacer();
-        panel9.add(spacer7, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
-        final JPanel panel10 = new JPanel();
-        panel10.setLayout(new GridLayoutManager(2, 1, new Insets(0, 0, 0, 0), -1, -1));
-        tabbedPane2.addTab("StaticInitalitionProtector", panel10);
-        staticinitializionProtectorEnabled = new JCheckBox();
-        this.$$$loadButtonText$$$(staticinitializionProtectorEnabled, ResourceBundle.getBundle("strings").getString("enabled"));
-        panel10.add(staticinitializionProtectorEnabled, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        final Spacer spacer8 = new Spacer();
-        panel10.add(spacer8, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
-        final JPanel panel11 = new JPanel();
-        panel11.setLayout(new GridLayoutManager(2, 1, new Insets(0, 0, 0, 0), -1, -1));
-        tabbedPane2.addTab("StringEncryption", panel11);
-        stringEncryptionEnabled = new JCheckBox();
-        this.$$$loadButtonText$$$(stringEncryptionEnabled, ResourceBundle.getBundle("strings").getString("enabled"));
-        panel11.add(stringEncryptionEnabled, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        final Spacer spacer9 = new Spacer();
-        panel11.add(spacer9, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
-        final JPanel panel12 = new JPanel();
-        panel12.setLayout(new GridLayoutManager(2, 1, new Insets(0, 0, 0, 0), -1, -1));
-        tabbedPane2.addTab("ReferenceProxy", panel12);
-        referenceProxyEnabled = new JCheckBox();
-        referenceProxyEnabled.setText("Enabled");
-        panel12.add(referenceProxyEnabled, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        final Spacer spacer10 = new Spacer();
-        panel12.add(spacer10, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
-        final JPanel panel13 = new JPanel();
-        panel13.setLayout(new GridLayoutManager(4, 2, new Insets(0, 0, 0, 0), -1, -1));
-        tabbedPane1.addTab("Config", panel13);
+        panel5.setLayout(new GridLayoutManager(4, 2, new Insets(0, 0, 0, 0), -1, -1));
+        tabbedPane1.addTab("Config", panel5);
         buildButton = new JButton();
         buildButton.setText("Build");
-        panel13.add(buildButton, new GridConstraints(0, 0, 1, 2, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        panel5.add(buildButton, new GridConstraints(0, 0, 1, 2, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         loadButton = new JButton();
         loadButton.setText("Load");
-        panel13.add(loadButton, new GridConstraints(3, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        panel5.add(loadButton, new GridConstraints(3, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         saveButton = new JButton();
         saveButton.setText("Save");
-        panel13.add(saveButton, new GridConstraints(3, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        panel5.add(saveButton, new GridConstraints(3, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         prettyPrintCheckBox = new JCheckBox();
         prettyPrintCheckBox.setText("PrettyPrint");
-        panel13.add(prettyPrintCheckBox, new GridConstraints(1, 0, 1, 2, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        panel5.add(prettyPrintCheckBox, new GridConstraints(1, 0, 1, 2, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JScrollPane scrollPane1 = new JScrollPane();
-        panel13.add(scrollPane1, new GridConstraints(2, 0, 1, 2, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
+        panel5.add(scrollPane1, new GridConstraints(2, 0, 1, 2, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
         configPanel = new JTextArea();
         scrollPane1.setViewportView(configPanel);
-        final JPanel panel14 = new JPanel();
-        panel14.setLayout(new GridLayoutManager(1, 1, new Insets(0, 0, 0, 0), -1, -1));
-        tabbedPane1.addTab(ResourceBundle.getBundle("strings").getString("class.options"), panel14);
-        final JPanel panel15 = new JPanel();
-        panel15.setLayout(new GridLayoutManager(1, 1, new Insets(0, 0, 0, 0), -1, -1));
-        tabbedPane1.addTab(ResourceBundle.getBundle("strings").getString("log"), panel15);
+        final JPanel panel6 = new JPanel();
+        panel6.setLayout(new GridLayoutManager(1, 1, new Insets(0, 0, 0, 0), -1, -1));
+        tabbedPane1.addTab("Script", panel6);
+        final RTextScrollPane rTextScrollPane1 = new RTextScrollPane();
+        panel6.add(rTextScrollPane1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        scriptArea = new RSyntaxTextArea();
+        scriptArea.setCodeFoldingEnabled(true);
+        scriptArea.setColumns(150);
+        scriptArea.setRows(27);
+        scriptArea.setShowMatchedBracketPopup(false);
+        scriptArea.setSyntaxEditingStyle("text/javascript");
+        rTextScrollPane1.setViewportView(scriptArea);
+        final JPanel panel7 = new JPanel();
+        panel7.setLayout(new GridLayoutManager(2, 3, new Insets(0, 0, 0, 0), -1, -1));
+        tabbedPane1.addTab("Templates", panel7);
+        templates = new JList();
+        panel7.add(templates, new GridConstraints(0, 0, 1, 3, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(150, 50), null, 0, false));
+        loadTemplateButton = new JButton();
+        loadTemplateButton.setText("Apply");
+        panel7.add(loadTemplateButton, new GridConstraints(1, 0, 1, 3, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JPanel panel8 = new JPanel();
+        panel8.setLayout(new GridLayoutManager(2, 1, new Insets(0, 0, 0, 0), -1, -1));
+        tabbedPane1.addTab(ResourceBundle.getBundle("strings").getString("log"), panel8);
         final JScrollPane scrollPane2 = new JScrollPane();
-        panel15.add(scrollPane2, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
+        panel8.add(scrollPane2, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
         logArea = new JTextArea();
         logArea.setEditable(false);
         scrollPane2.setViewportView(logArea);
+        autoScroll = new JCheckBox();
+        autoScroll.setSelected(true);
+        autoScroll.setText("AutoScroll");
+        panel8.add(autoScroll, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         obfuscateButton = new JButton();
         this.$$$loadButtonText$$$(obfuscateButton, ResourceBundle.getBundle("strings").getString("obfuscate"));
         panel1.add(obfuscateButton, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));

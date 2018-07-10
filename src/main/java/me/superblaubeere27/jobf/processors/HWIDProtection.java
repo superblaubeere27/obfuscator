@@ -1,7 +1,11 @@
 package me.superblaubeere27.jobf.processors;
 
+import me.superblaubeere27.hwid.HWID;
 import me.superblaubeere27.jobf.IClassProcessor;
 import me.superblaubeere27.jobf.JObfImpl;
+import me.superblaubeere27.jobf.util.values.DeprecationLevel;
+import me.superblaubeere27.jobf.util.values.EnabledValue;
+import me.superblaubeere27.jobf.util.values.StringValue;
 import me.superblaubeere27.jobf.utils.NameUtils;
 import me.superblaubeere27.jobf.utils.NodeUtils;
 import org.objectweb.asm.Label;
@@ -15,11 +19,13 @@ import java.util.Random;
 
 public class HWIDProtection implements IClassProcessor {
     private static Random random = new Random();
-    private final byte[] hwid;
     private JObfImpl inst;
+    private static final String PROCESSOR_NAME = "HWIDPRotection";
+    private EnabledValue enabled = new EnabledValue(PROCESSOR_NAME, DeprecationLevel.GOOD, false);
+    private StringValue hwidValue = new StringValue(PROCESSOR_NAME, "HWID", DeprecationLevel.GOOD, HWID.bytesToHex(HWID.generateHWID()));
+    private byte[] hwid;
 
-    public HWIDProtection(JObfImpl inst, byte[] hwid) {
-        this.hwid = hwid;
+    public HWIDProtection(JObfImpl inst) {
         this.inst = inst;
     }
 
@@ -139,7 +145,11 @@ public class HWIDProtection implements IClassProcessor {
     }
 
     @Override
-    public void process(ClassNode node, int mode) {
+    public void process(ClassNode node) {
+        if (!enabled.getObject()) return;
+
+        hwid = HWID.hexStringToByteArray(hwidValue.getObject());
+
         if (Modifier.isInterface(node.access)) {
             return;
         }

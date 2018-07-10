@@ -2,6 +2,8 @@ package me.superblaubeere27.jobf.processors;
 
 import me.superblaubeere27.jobf.IClassProcessor;
 import me.superblaubeere27.jobf.JObfImpl;
+import me.superblaubeere27.jobf.util.values.DeprecationLevel;
+import me.superblaubeere27.jobf.util.values.EnabledValue;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -12,13 +14,18 @@ import java.util.Random;
 public class ShuffleMembersProcessor implements IClassProcessor {
     private static Random random = new Random();
     private JObfImpl inst;
+    private static final String PROCESSOR_NAME = "ShuffleMembers";
+
+    private EnabledValue enabled = new EnabledValue(PROCESSOR_NAME, DeprecationLevel.GOOD, true);
 
     public ShuffleMembersProcessor(JObfImpl inst) {
         this.inst = inst;
     }
 
     @Override
-    public void process(ClassNode node, int mode) {
+    public void process(ClassNode node) {
+        if (!enabled.getObject()) return;
+
         Collections.shuffle(node.methods, random);
         Collections.shuffle(node.fields, random);
         Collections.shuffle(node.innerClasses, random);

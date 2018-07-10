@@ -2,6 +2,8 @@ package me.superblaubeere27.jobf.processors;
 
 import me.superblaubeere27.jobf.IClassProcessor;
 import me.superblaubeere27.jobf.JObfImpl;
+import me.superblaubeere27.jobf.util.values.DeprecationLevel;
+import me.superblaubeere27.jobf.util.values.EnabledValue;
 import me.superblaubeere27.jobf.utils.NameUtils;
 import me.superblaubeere27.jobf.utils.NodeUtils;
 import org.objectweb.asm.Label;
@@ -20,13 +22,18 @@ import java.util.Random;
 public class ReferenceProxy implements IClassProcessor {
     private static Random random = new Random();
     private JObfImpl inst;
+    private static final String PROCESSOR_NAME = "ReferenceProxy";
+
+    private EnabledValue enabled = new EnabledValue(PROCESSOR_NAME, DeprecationLevel.BAD, false);
 
     public ReferenceProxy(JObfImpl inst) {
         this.inst = inst;
     }
 
     @Override
-    public void process(ClassNode node, int mode) {
+    public void process(ClassNode node) {
+        if (!enabled.getObject()) return;
+
         try {
             HashMap<String, MethodNode> nodes = new HashMap<>();
             List<MethodNode> add = new ArrayList<>();

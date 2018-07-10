@@ -7,6 +7,7 @@ import me.superblaubeere27.jobf.processors.name.NameObfuscation;
 import me.superblaubeere27.jobf.processors.packager.Packager;
 import me.superblaubeere27.jobf.util.Util;
 import me.superblaubeere27.jobf.util.script.JObfScript;
+import me.superblaubeere27.jobf.util.values.ValueManager;
 import me.superblaubeere27.jobf.utils.ClassTree;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -21,15 +22,15 @@ import org.objectweb.asm.tree.analysis.BasicInterpreter;
 import java.io.*;
 import java.util.*;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 public class JObfImpl {
-    final static Logger log = Logger.getLogger("Obfuscator");
-    public static List<IClassProcessor> processors = new ArrayList<>();
+    public static final JObfImpl INSTANCE = new JObfImpl();
+    //    final static Logger log = Logger.getLogger("Obfuscator");
+    public static List<IClassProcessor> processors;
     private boolean packagerEnabled = false;
     private boolean hwid;
     private byte[] hwidBytes;
@@ -69,6 +70,8 @@ public class JObfImpl {
 //        processors.add(new SBProcessor(this));
 //        processors.add(new LineNumberRemover(this));
 //        processors.add(new ShuffleMembersProcessor(this));
+        processors = new ArrayList<>();
+        addProcessors();
     }
 
     public static void processConsole(String inFile, String outFile, List<File> fileList, String logFile, int mode, boolean packager, boolean nameobf, boolean hwid, boolean invokeDynamic, byte[] hwidBytes, String packagerMainClass, JObfScript script) {
@@ -85,20 +88,20 @@ public class JObfImpl {
         inst.script = script;
         inst.nameobf = nameobf;
 
-        inst.addProcessors();
+//        inst.addProcessors();
 
 
         try {
-            System.out.println("Loading classpath...");
+            JObf.log.info("Loading classpath...");
             inst.loadClasspath();
-            System.out.println("Loaded");
+            JObf.log.info("Loaded");
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         inst.processJar(inFile, outFile, mode);
 
-        log.fine("Processed " + inFile);
+        JObf.log.fine("Processed " + inFile);
     }
 
     public String getMainClass() {
@@ -133,7 +136,7 @@ public class JObfImpl {
             int i = 0;
             for (File file : libraryFiles) {
                 if (file.isFile()) {
-                    System.out.println("Loading " + file.getAbsolutePath() + " (" + (i++ * 100 / libraryFiles.size()) + "%)");
+                    JObf.log.info("Loading " + file.getAbsolutePath() + " (" + (i++ * 100 / libraryFiles.size()) + "%)");
                     classpath.putAll(loadClasspathFile(file, true));
                 }
 // else {
@@ -322,14 +325,17 @@ public class JObfImpl {
     }
 
     public void addProcessors() {
-        processors.add(new StaticInitializionProcessor(this));
+        processors
+                .add(
+                        new StaticInitializionProcessor(
+                                this));
 
-        if (hwid) {
-            processors.add(new HWIDProtection(this, hwidBytes));
-        }
-        if (invokeDynamic) {
+//        if (hwid) {
+        processors.add(new HWIDProtection(this));
+//        }
+//        if (invokeDynamic) {
             processors.add(new InvokeDynamic(this));
-        }
+//        }
         processors.add(new StringEncryptionProcessor(this));
         processors.add(new NumberObfuscationProcessor(this));
         processors.add(new FlowObfuscator(this));
@@ -340,7 +346,18 @@ public class JObfImpl {
 
         nameObfuscationProcessors.add(new NameObfuscation());
 //        processors.add(new CrasherProcessor(this));
-//        processors.add(new ReferenceProxy(this));
+        processors.add(new ReferenceProxy(this));
+
+        for (IClassProcessor processor : processors) {
+            ValueManager.registerClass(processor);
+        }
+//        for (Value<?> value : ValueManager.getValues()) {
+//            System.out.println(value);
+//        }
+    }
+
+    public void setScript(JObfScript script) {
+        this.script = script;
     }
 
     public void processJar(String inFile, String outFile, int mode) {
@@ -353,6 +370,7 @@ public class JObfImpl {
                 packager.initHWID(hwidBytes);
             }
         }
+
         ZipInputStream inJar = null;
         ZipOutputStream outJar = null;
 
@@ -411,7 +429,7 @@ public class JObfImpl {
                 } else {
                     if (entryName.equals("META-INF/MANIFEST.MF")) {
                         setMainClass(Util.getMainClass(new String(entryData, "UTF-8")));
-                        System.out.println(mainClass);
+                        JObf.log.fine(mainClass);
                     }
 
                     files.put(entryName, entryData);
@@ -438,14 +456,15 @@ public class JObfImpl {
 
                 try {
                     try {
+
                         computeMode = ClassWriter.COMPUTE_MAXS;
 
-                        JObfImpl.log.log(Level.FINE, String.format("(%s/%s), Processing %s", processed, classes.size(), entryName));
+                        JObf.log.log(Level.INFO, String.format("(%s/%s), Processing %s", processed, classes.size(), entryName));
 
 
                         if (script == null || script.isObfuscatorEnabled(cn.name)) {
                             for (IClassProcessor proc : processors)
-                                proc.process(cn, mode);
+                                proc.process(cn);
                         }
 
 
@@ -495,12 +514,12 @@ public class JObfImpl {
                         entryData = Util.replaceMainClass(new String(entryData, "UTF-8"), packager.getDecryptorClassName()).getBytes("UTF-8");
                     } else if (mainClassChanged) {
                         entryData = Util.replaceMainClass(new String(entryData, "UTF-8"), mainClass).getBytes("UTF-8");
-                        JObfImpl.log.log(Level.FINE, "Replaced Main-Class with " + mainClass);
+                        JObf.log.log(Level.FINE, "Replaced Main-Class with " + mainClass);
                     }
 
-                    JObfImpl.log.log(Level.FINE, "Processed MANIFEST.MF");
+                    JObf.log.log(Level.FINE, "Processed MANIFEST.MF");
                 }
-                JObfImpl.log.log(Level.FINE, "Copying " + entryName);
+                JObf.log.log(Level.INFO, "Copying " + entryName);
 
                 ZipEntry newEntry = new ZipEntry(entryName);
                 outJar.putNextEntry(newEntry);
@@ -519,12 +538,12 @@ public class JObfImpl {
                 outJar.write(ByteStreams.toByteArray(JObfImpl.class.getClassLoader().getResourceAsStream(name)));
             }
             if (packagerEnabled) {
-                System.out.println("Packaging...");
+                JObf.log.info("Packaging...");
                 byte[] decryptorData = packager.generateEncryptionClass(packagerMainClass, mode);
                 outJar.putNextEntry(new ZipEntry(packager.getDecryptorClassName() + ".class"));
                 outJar.write(decryptorData);
                 outJar.closeEntry();
-                System.out.println("Packaging finished.");
+                JObf.log.info("Packaging finished.");
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -533,7 +552,7 @@ public class JObfImpl {
                 try {
                     outJar.flush();
                     outJar.close();
-                    System.out.println(">>> Processing completed +" + (new File(inFile).length() / ((float) new File(outFile).length()) * 100.0f) + "%");
+                    JObf.log.info(">>> Processing completed +" + (new File(inFile).length() / ((float) new File(outFile).length()) * 100.0f) + "%");
                 } catch (Exception e) {
                     // ignore
                 }
@@ -566,9 +585,9 @@ public class JObfImpl {
         cr.accept(ca, 0);
 
         for (IClassProcessor proc : processors)
-            proc.process(cn, mode);
+            proc.process(cn);
 
-        Analyzer analyzer = new Analyzer(new BasicInterpreter());
+        Analyzer<org.objectweb.asm.tree.analysis.BasicValue> analyzer = new Analyzer<>(new BasicInterpreter());
 
         for (MethodNode method : cn.methods) {
             System.err.println("Verifing " + cn.name + "/" + method.name);
@@ -587,23 +606,4 @@ public class JObfImpl {
         return workDone ? writer.toByteArray() : cls;
     }
 
-    public void loadConfig(Configuration config) {
-        FlowObfuscator flowObfuscator = new FlowObfuscator(this);
-        LineNumberRemover numberRemover = new LineNumberRemover(this);
-        NumberObfuscationProcessor numberProcessor = new NumberObfuscationProcessor(this);
-        SBProcessor sbProcessor = new SBProcessor(this);
-        ShuffleMembersProcessor shuffleMembersProcessor = new ShuffleMembersProcessor(this);
-        StaticInitializionProcessor staticInitializionProcessor = new StaticInitializionProcessor(this);
-        StringEncryptionProcessor stringEncryptionProcessor = new StringEncryptionProcessor(this);
-        ReferenceProxy referenceProxy = new ReferenceProxy(this);
-
-        if (config.isStaticInitializionProtectorEnabled) addProcessor(staticInitializionProcessor);
-        if (config.isReferenceProxyEnabled) addProcessor(referenceProxy);
-        if (config.isStringEncryptionEnabled) addProcessor(stringEncryptionProcessor);
-        if (config.isNumberObfuscatorEnabled) addProcessor(numberProcessor);
-        if (config.isFlowObfuscatorEnabled) addProcessor(flowObfuscator);
-        if (config.isInformationRemoverEnabled) addProcessor(numberRemover);
-        if (config.isHiderEnabled) addProcessor(sbProcessor);
-        if (config.isShuffleMembersEnabled) addProcessor(shuffleMembersProcessor);
-    }
 }

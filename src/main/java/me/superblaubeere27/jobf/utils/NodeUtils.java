@@ -10,6 +10,7 @@ import org.objectweb.asm.tree.*;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
+import java.util.function.Predicate;
 
 import static org.objectweb.asm.Opcodes.*;
 
@@ -19,9 +20,9 @@ import static org.objectweb.asm.Opcodes.*;
  * Fume - By CCBlueX(Marco)
  */
 public class NodeUtils {
-    public final static HashMap<Type, Integer> TYPE_TO_LOAD = new HashMap<>();
-    public final static HashMap<Type, Integer> TYPE_TO_STORE = new HashMap<>();
-    public static HashMap<Type, String> TYPE_TO_WRAPPER = new HashMap<>();
+    private final static HashMap<Type, Integer> TYPE_TO_LOAD = new HashMap<>();
+    private final static HashMap<Type, Integer> TYPE_TO_STORE = new HashMap<>();
+    private static HashMap<Type, String> TYPE_TO_WRAPPER = new HashMap<>();
 
     static {
         TYPE_TO_WRAPPER.put(Type.INT_TYPE, "java/lang/Integer");
@@ -212,6 +213,14 @@ public class NodeUtils {
         }
 
         return new MethodInsnNode(opcode, classNode.name, methodNode.name, methodNode.desc, false);
+    }
+
+    public static void insertOn(InsnList instructions, Predicate<AbstractInsnNode> predicate, InsnList toAdd) {
+        for (AbstractInsnNode abstractInsnNode : instructions.toArray()) {
+            if (predicate.test(abstractInsnNode)) {
+                instructions.insertBefore(abstractInsnNode, toAdd);
+            }
+        }
     }
 
 //    public static int getTypeLoad(Type argumentType) {

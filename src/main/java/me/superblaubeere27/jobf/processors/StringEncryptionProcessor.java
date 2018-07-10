@@ -2,10 +2,10 @@ package me.superblaubeere27.jobf.processors;
 
 import me.superblaubeere27.jobf.IClassProcessor;
 import me.superblaubeere27.jobf.JObfImpl;
-import me.superblaubeere27.jobf.processors.encryption.string.BlowfishEncryptionAlgorithm;
-import me.superblaubeere27.jobf.processors.encryption.string.DESEncryptionAlgorithm;
-import me.superblaubeere27.jobf.processors.encryption.string.IStringEncryptionAlgorithm;
-import me.superblaubeere27.jobf.processors.encryption.string.XOREncryptionAlgorithm;
+import me.superblaubeere27.jobf.processors.encryption.string.*;
+import me.superblaubeere27.jobf.util.values.BooleanValue;
+import me.superblaubeere27.jobf.util.values.DeprecationLevel;
+import me.superblaubeere27.jobf.util.values.EnabledValue;
 import me.superblaubeere27.jobf.utils.NameUtils;
 import me.superblaubeere27.jobf.utils.NodeUtils;
 import me.superblaubeere27.jobf.utils.StringUtils;
@@ -18,25 +18,35 @@ import java.lang.reflect.Modifier;
 import java.util.*;
 
 public class StringEncryptionProcessor implements IClassProcessor {
-    private static final String MAGICNUMBER_START = "\u4590";
-    private static final String MAGICNUMBER_SPLIT = "\u4591";
-    private static final String MAGICNUMBER_END = "\u4592";
+    public static final String MAGICNUMBER_START = "ä";
+    private static final String MAGICNUMBER_SPLIT = "ö";
+    private static final String MAGICNUMBER_END = "ü";
+    private static final String PROCESSOR_NAME = "StringEncryption";
     private static Random random = new Random();
     private JObfImpl inst;
     private List<IStringEncryptionAlgorithm> algorithmList = new ArrayList<>();
+    private EnabledValue enabled = new EnabledValue(PROCESSOR_NAME, DeprecationLevel.GOOD, true);
+    private BooleanValue hideStrings = new BooleanValue(PROCESSOR_NAME, "HideStrings", DeprecationLevel.GOOD, false);
+    private BooleanValue aes = new BooleanValue(PROCESSOR_NAME, "AES", DeprecationLevel.OK, false);
 
     public StringEncryptionProcessor(JObfImpl inst) {
         this.inst = inst;
     }
 
     private static void hideStrings(ClassNode cn, MethodNode... methods) {
+        cn.sourceFile = null;
+        cn.sourceDebug = null;
         String fieldName = NameUtils.generateFieldName(cn);
         HashMap<Integer, String> hiddenStrings = new HashMap<>();
         int slot = 0;
 
         int stringLength = 0;
 
+        int methodCount = 0;
+        MethodNode methodNode = null;
+
         for (MethodNode method : methods) {
+            boolean hide = false;
             for (AbstractInsnNode abstractInsnNode : method.instructions.toArray()) {
                 if (abstractInsnNode instanceof LdcInsnNode) {
                     LdcInsnNode ldc = (LdcInsnNode) abstractInsnNode;
@@ -54,10 +64,26 @@ public class StringEncryptionProcessor implements IClassProcessor {
                         slot++;
                         stringLength += ((String) ldc.cst).length() + 1;
                         hiddenStrings.put(slot, (String) ldc.cst);
+                        hide = true;
                     }
                 }
             }
+            if (hide) {
+                methodCount++;
+                methodNode = method;
+            }
         }
+
+        if (methodCount == 1) {
+            InsnList toAdd = new InsnList();
+            toAdd.add(new InsnNode(Opcodes.ACONST_NULL));
+            toAdd.add(new FieldInsnNode(Opcodes.PUTSTATIC, cn.name, fieldName, "[Ljava/lang/String;"));
+
+            NodeUtils.insertOn(methodNode.instructions, insnNode -> insnNode.getOpcode() >= Opcodes.IRETURN && insnNode.getOpcode() <= Opcodes.RETURN, toAdd);
+
+//            System.out.println("Win in " + cn.name);
+        }
+
         StringBuilder sb = new StringBuilder(MAGICNUMBER_START);
         for (String s : hiddenStrings.values()) {
             sb.append(s);
@@ -114,17 +140,20 @@ public class StringEncryptionProcessor implements IClassProcessor {
             generateStrings.maxLocals = 4;
 //            generateStrings.localVariables.add(new LocalVariableNode(NameUtils.generateLocalVariableName(), "Ljava/lang/String;", null, start, end, 1));
             cn.methods.add(generateStrings);
+//            System.out.println("Added shit in " + cn.name);
 
-            clInit.instructions.insertBefore(clInit.instructions.getFirst(), new MethodInsnNode(Opcodes.INVOKESTATIC, cn.name, fieldName, "()V", false));
+            clInit.instructions.insertBefore(clInit.instructions.getFirst(), NodeUtils.methodCall(cn, generateStrings));
+//            System.out.println(generateStrings.name);
         }
     }
 
 
     @Override
-    public void process(ClassNode node, int mode) {
-        initAlgorithims(mode);
+    public void process(ClassNode node) {
+        if (!enabled.getObject()) return;
+        initAlgorithms();
 
-        boolean hideStrings = mode == 1;
+        boolean hideStrings = this.hideStrings.getObject();
 
         if (Modifier.isInterface(node.access)) return;
 
@@ -247,16 +276,14 @@ public class StringEncryptionProcessor implements IClassProcessor {
         inst.setWorkDone();
     }
 
-    private void initAlgorithims(int mode) {
+    private void initAlgorithms() {
         algorithmList.clear();
 
         algorithmList.add(new XOREncryptionAlgorithm());
         algorithmList.add(new DESEncryptionAlgorithm());
         algorithmList.add(new BlowfishEncryptionAlgorithm());
 
-        if (mode == 1) {
-//            algorithmList.add(new AESEncryptionAlgorithm());
-        }
+        if (aes.getObject()) algorithmList.add(new AESEncryptionAlgorithm());
     }
 
 }
