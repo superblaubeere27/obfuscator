@@ -31,10 +31,8 @@ public class JObfImpl {
     public static final JObfImpl INSTANCE = new JObfImpl();
     //    final static Logger log = Logger.getLogger("Obfuscator");
     public static List<IClassProcessor> processors;
-    private boolean packagerEnabled = false;
     private boolean hwid;
     private byte[] hwidBytes;
-    private Packager packager;
     private String packagerMainClass;
     private boolean workDone = false;
     public static HashMap<String, ClassNode> classes = new HashMap<>();
@@ -78,11 +76,9 @@ public class JObfImpl {
         JObfImpl inst = new JObfImpl();
 
 
-        inst.packagerEnabled = packager;
         inst.hwid = hwid;
         inst.invokeDynamic = invokeDynamic;
         inst.hwidBytes = hwidBytes;
-        inst.packager = new Packager();
         inst.packagerMainClass = packagerMainClass;
         inst.libraryFiles = fileList;
         inst.script = script;
@@ -361,16 +357,6 @@ public class JObfImpl {
     }
 
     public void processJar(String inFile, String outFile, int mode) {
-        if (packagerEnabled) {
-            packager = new Packager();
-
-            if (!hwid) {
-                packager.init();
-            } else {
-                packager.initHWID(hwidBytes);
-            }
-        }
-
         ZipInputStream inJar = null;
         ZipOutputStream outJar = null;
 
@@ -459,12 +445,13 @@ public class JObfImpl {
 
                         computeMode = ClassWriter.COMPUTE_MAXS;
 
-                        JObf.log.log(Level.INFO, String.format("(%s/%s), Processing %s", processed, classes.size(), entryName));
 
-
-                        if (script == null || script.isObfuscatorEnabled(cn.name)) {
+                        if (script == null || script.isObfuscatorEnabled(cn)) {
+                            JObf.log.log(Level.INFO, String.format("(%s/%s), Processing %s", processed, classes.size(), entryName));
                             for (IClassProcessor proc : processors)
                                 proc.process(cn);
+                        } else {
+                            JObf.log.log(Level.INFO, String.format("(%s/%s), Skipping %s", processed, classes.size(), entryName));
                         }
 
 
@@ -484,9 +471,9 @@ public class JObfImpl {
                         e.printStackTrace();
                     }
                     try {
-                        if (packagerEnabled) {
-                            entryName = packager.encryptName(entryName.replace(".class", ""));
-                            entryData = packager.encryptClass(entryData);
+                        if (Packager.INSTANCE.isEnabled()) {
+                            entryName = Packager.INSTANCE.encryptName(entryName.replace(".class", ""));
+                            entryData = Packager.INSTANCE.encryptClass(entryData);
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -510,8 +497,8 @@ public class JObfImpl {
                 byte[] entryData = stringEntry.getValue();
 
                 if (entryName.equals("META-INF/MANIFEST.MF")) {
-                    if (packagerEnabled) {
-                        entryData = Util.replaceMainClass(new String(entryData, "UTF-8"), packager.getDecryptorClassName()).getBytes("UTF-8");
+                    if (Packager.INSTANCE.isEnabled()) {
+                        entryData = Util.replaceMainClass(new String(entryData, "UTF-8"), Packager.INSTANCE.getDecryptorClassName()).getBytes("UTF-8");
                     } else if (mainClassChanged) {
                         entryData = Util.replaceMainClass(new String(entryData, "UTF-8"), mainClass).getBytes("UTF-8");
                         JObf.log.log(Level.FINE, "Replaced Main-Class with " + mainClass);
@@ -537,10 +524,10 @@ public class JObfImpl {
                 outJar.putNextEntry(newEntry);
                 outJar.write(ByteStreams.toByteArray(JObfImpl.class.getClassLoader().getResourceAsStream(name)));
             }
-            if (packagerEnabled) {
+            if (Packager.INSTANCE.isEnabled()) {
                 JObf.log.info("Packaging...");
-                byte[] decryptorData = packager.generateEncryptionClass(packagerMainClass, mode);
-                outJar.putNextEntry(new ZipEntry(packager.getDecryptorClassName() + ".class"));
+                byte[] decryptorData = Packager.INSTANCE.generateEncryptionClass(packagerMainClass, mode);
+                outJar.putNextEntry(new ZipEntry(Packager.INSTANCE.getDecryptorClassName() + ".class"));
                 outJar.write(decryptorData);
                 outJar.closeEntry();
                 JObf.log.info("Packaging finished.");

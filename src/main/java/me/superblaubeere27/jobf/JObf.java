@@ -4,6 +4,7 @@ import joptsimple.OptionException;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import me.superblaubeere27.hwid.HWID;
+import me.superblaubeere27.jobf.processors.packager.Packager;
 import me.superblaubeere27.jobf.ui.GUI;
 import me.superblaubeere27.jobf.util.script.JObfScript;
 import me.superblaubeere27.jobf.utils.Templates;
@@ -36,6 +37,9 @@ public class JObf {
             public void publish(LogRecord record) {
 //                    if (record.getLevel().intValue() < Level.INFO.intValue()) return;
 //                System.out.println("ACAB");
+                if (record.getMessage() == null)
+                    return;
+//                System.out.println(record.getMessage() + "/" + record.getParameters());
                 if (gui != null) {
                     gui.logArea.append(String.format(record.getMessage(), record.getParameters()) + "\n");
                     gui.scrollDown();
@@ -146,7 +150,7 @@ public class JObf {
             } catch (Exception e1) {
                 e1.printStackTrace();
             }
-
+            Packager.INSTANCE.isEnabled();
             gui = new GUI();
 //            e.printStackTrace();
 //            parser.printHelpOn(System.out);

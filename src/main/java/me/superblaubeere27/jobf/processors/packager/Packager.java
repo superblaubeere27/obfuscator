@@ -2,6 +2,9 @@ package me.superblaubeere27.jobf.processors.packager;
 
 import me.superblaubeere27.jobf.IClassProcessor;
 import me.superblaubeere27.jobf.JObfImpl;
+import me.superblaubeere27.jobf.util.values.DeprecationLevel;
+import me.superblaubeere27.jobf.util.values.EnabledValue;
+import me.superblaubeere27.jobf.util.values.ValueManager;
 import me.superblaubeere27.jobf.utils.NameUtils;
 import me.superblaubeere27.jobf.utils.NodeUtils;
 import org.objectweb.asm.*;
@@ -17,6 +20,17 @@ public class Packager {
     private boolean hwidBound = false;
     private byte[] key;
     private String decryptorClassName;
+    private static final String PROCESSOR_NAME = "Packager";
+    public static Packager INSTANCE = new Packager();
+    private EnabledValue enabledValue = new EnabledValue(PROCESSOR_NAME, DeprecationLevel.OK, false);
+
+    private Packager() {
+        ValueManager.registerClass(this);
+    }
+
+    public boolean isEnabled() {
+        return enabledValue.getObject();
+    }
 
     private static byte[] xor(byte[] data, byte[] key) {
         byte[] result = new byte[data.length];

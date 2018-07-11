@@ -1,0 +1,21 @@
+{
+  "script": "function isRemappingEnabledForClass(node) {\n    return false;\n}\nfunction isObfuscatorEnabledForClass(node) {\n\tvar flag \u003d false;\n\n\tif (node.superName.contains(\"IFMLLoadingPlugin\")) {\n\t\tflag \u003d true;\n\t}\n\n\tfor (i \u003d 0; i \u003c node.methods.length; i++) {\n\t\tvar method \u003d node.methods[i];\n\n\t\tif (method.visibleAnnotations !\u003d null) {\n\t\t\tfor (j \u003d 0; j \u003c method.visibleAnnotations.length; j++) {\n\t\t\t\tvar annotation \u003d method.visibleAnnotations[j];\n\t\t\t\t//print(\"ANNOTATION: \" + annotation.desc)\n\t\t\t\t\n\t\t\t\tif (annotation !\u003d null) {\n\t\t\t\t\ttry {\n\t\t\t\t\t\tif (annotation.desc.contains(\"injection\") \u0026\u0026 annotation.desc.contains(\"spongepowered\")) {\n\t\t\t\t\t\t\tflag \u003d true;\n\t\t\t\t\t\t}\n\t\t\t\t\t} catch (e) {\n\t\t\t\t\t\t\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n\t\n    \treturn !flag \u0026\u0026 !node.name.contains(\"spongepowered\") \u0026\u0026 !node.name.contains(\"springframework\");\n}",
+  "ReferenceProxy": {
+    "Enabled": false
+  },
+  "InvokeDynamic": {
+    "Enabled": false
+  },
+  "Packager": {
+    "Enabled": false
+  },
+  "HideMembers": {
+    "Enabled": true
+  },
+  "NumberObfuscation": {
+    "Enabled": true,
+    "Extract to Array": true,
+    "Obfuscate Zero": true,
+    "Multiple Instructions": true
+  }
+}

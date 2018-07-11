@@ -24,7 +24,7 @@ public class NameObfuscation implements INameObfuscationProcessor {
 
 
         for (final ClassNode classNode : classNodes) {
-            if (!inst.script.remapClass(classNode.name)) continue;
+            if (!inst.script.remapClass(classNode)) continue;
 
             String mappedName;
 

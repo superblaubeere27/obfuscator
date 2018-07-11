@@ -1,5 +1,7 @@
 package me.superblaubeere27.jobf.util.script;
 
+import org.objectweb.asm.tree.ClassNode;
+
 import javax.script.Invocable;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
@@ -18,11 +20,11 @@ public class JObfScript {
         }
     }
 
-    public boolean remapClass(String className) {
+    public boolean remapClass(ClassNode node) {
         try {
             Invocable invocable = (Invocable) jsEngine;
 
-            return (boolean) invocable.invokeFunction("isRemappingEnabledForClass", className);
+            return (boolean) invocable.invokeFunction("isRemappingEnabledForClass", node);
         } catch (NoSuchMethodException e) {
             return true;
         } catch (ScriptException e) {
@@ -31,11 +33,11 @@ public class JObfScript {
         }
     }
 
-    public boolean isObfuscatorEnabled(String className) {
+    public boolean isObfuscatorEnabled(ClassNode node) {
         try {
             Invocable invocable = (Invocable) jsEngine;
 
-            return (boolean) invocable.invokeFunction("isObfuscatorEnabledForClass", className);
+            return (boolean) invocable.invokeFunction("isObfuscatorEnabledForClass", node);
         } catch (NoSuchMethodException e) {
             return true;
         } catch (ScriptException e) {

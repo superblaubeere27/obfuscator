@@ -107,10 +107,10 @@ public class GUI extends JFrame {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        scriptArea.setText("function isRemappingEnabledForClass(name) {\n" +
+        scriptArea.setText("function isRemappingEnabledForClass(node) {\n" +
                 "    return false;\n" +
                 "}\n" +
-                "function isObfuscatorEnabledForClass(name) {\n" +
+                "function isObfuscatorEnabledForClass(node) {\n" +
                 "    return true;\n" +
                 "}");
         initValues();
