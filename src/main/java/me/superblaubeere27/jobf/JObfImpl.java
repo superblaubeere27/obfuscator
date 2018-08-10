@@ -20,6 +20,7 @@ import org.objectweb.asm.tree.analysis.AnalyzerException;
 import org.objectweb.asm.tree.analysis.BasicInterpreter;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.zip.ZipEntry;
@@ -341,7 +342,7 @@ public class JObfImpl {
 
 
         nameObfuscationProcessors.add(new NameObfuscation());
-//        processors.add(new CrasherProcessor(this));
+        processors.add(new CrasherProcessor(this));
         processors.add(new ReferenceProxy(this));
 
         for (IClassProcessor processor : processors) {
@@ -414,7 +415,7 @@ public class JObfImpl {
 
                 } else {
                     if (entryName.equals("META-INF/MANIFEST.MF")) {
-                        setMainClass(Util.getMainClass(new String(entryData, "UTF-8")));
+                        setMainClass(Util.getMainClass(new String(entryData, StandardCharsets.UTF_8)));
                         JObf.log.fine(mainClass);
                     }
 
@@ -498,9 +499,9 @@ public class JObfImpl {
 
                 if (entryName.equals("META-INF/MANIFEST.MF")) {
                     if (Packager.INSTANCE.isEnabled()) {
-                        entryData = Util.replaceMainClass(new String(entryData, "UTF-8"), Packager.INSTANCE.getDecryptorClassName()).getBytes("UTF-8");
+                        entryData = Util.replaceMainClass(new String(entryData, StandardCharsets.UTF_8), Packager.INSTANCE.getDecryptorClassName()).getBytes(StandardCharsets.UTF_8);
                     } else if (mainClassChanged) {
-                        entryData = Util.replaceMainClass(new String(entryData, "UTF-8"), mainClass).getBytes("UTF-8");
+                        entryData = Util.replaceMainClass(new String(entryData, StandardCharsets.UTF_8), mainClass).getBytes(StandardCharsets.UTF_8);
                         JObf.log.log(Level.FINE, "Replaced Main-Class with " + mainClass);
                     }
 

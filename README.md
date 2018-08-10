@@ -427,3 +427,6 @@ USE PROGUARD!!!
 ## Credits
 - MCInjector (FFixer base)
 - FFixer (Obfuscator base)
+- SmokeObfuscator (Some ideas)
+- MarcoMC (Some ideas)
+- ItzSomebody (NameUtils.crazyString(), Crasher)

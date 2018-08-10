@@ -23,6 +23,7 @@ public class FlowObfuscator implements IClassProcessor {
     private BooleanValue replaceGoto = new BooleanValue(PROCESSOR_NAME, "Replace GOTO", DeprecationLevel.GOOD, true);
     private BooleanValue replaceIf = new BooleanValue(PROCESSOR_NAME, "Replace If", DeprecationLevel.GOOD, true);
     private BooleanValue badPop = new BooleanValue(PROCESSOR_NAME, "Bad POP", DeprecationLevel.GOOD, true);
+    private BooleanValue badConcat = new BooleanValue(PROCESSOR_NAME, "Bad Concat", DeprecationLevel.GOOD, true);
 
     public FlowObfuscator(JObfImpl inst) {
         this.inst = inst;
@@ -31,7 +32,7 @@ public class FlowObfuscator implements IClassProcessor {
     private static InsnList ifGoto(LabelNode label) {
         InsnList insnList = new InsnList();
 
-        int i = random.nextInt(5);
+        int i = random.nextInt(15);
 
         switch (i) {
             case 0: {
@@ -152,11 +153,59 @@ public class FlowObfuscator implements IClassProcessor {
                 break;
             }
             case 9: {
-                int first = 0;
+                int second;
 
+                second = -random.nextInt(5) - 1;
 
-                insnList.add(NodeUtils.generateIntPush(first));
-                insnList.add(new JumpInsnNode(Opcodes.IFEQ, label));
+                insnList.add(NodeUtils.generateIntPush(second));
+                insnList.add(new JumpInsnNode(Opcodes.IFGE, label));
+                insnList.add(new InsnNode(Opcodes.ACONST_NULL));
+                insnList.add(new InsnNode(Opcodes.ATHROW));
+                break;
+            }
+            case 10: {
+                int second;
+
+                second = -random.nextInt(5);
+
+                insnList.add(NodeUtils.generateIntPush(second));
+                insnList.add(new JumpInsnNode(Opcodes.IFGT, label));
+                insnList.add(new InsnNode(Opcodes.ACONST_NULL));
+                insnList.add(new InsnNode(Opcodes.ATHROW));
+                break;
+            }
+            case 11: {
+                int second;
+
+                second = random.nextInt(5) + 1;
+
+                insnList.add(NodeUtils.generateIntPush(second));
+                insnList.add(new JumpInsnNode(Opcodes.IFLE, label));
+                insnList.add(new InsnNode(Opcodes.ACONST_NULL));
+                insnList.add(new InsnNode(Opcodes.ATHROW));
+                break;
+            }
+            case 12: {
+                int second;
+
+                second = random.nextInt(5);
+
+                insnList.add(NodeUtils.generateIntPush(second));
+                insnList.add(new JumpInsnNode(Opcodes.IFLT, label));
+                insnList.add(new InsnNode(Opcodes.ACONST_NULL));
+                insnList.add(new InsnNode(Opcodes.ATHROW));
+                break;
+            }
+            case 13: {
+                insnList.add(new InsnNode(Opcodes.ACONST_NULL));
+                insnList.add(new JumpInsnNode(Opcodes.IFNULL, label));
+                insnList.add(new InsnNode(Opcodes.ACONST_NULL));
+                insnList.add(new InsnNode(Opcodes.ATHROW));
+                break;
+            }
+            case 14: {
+                insnList.add(NodeUtils.notNullPush());
+                insnList.add(new JumpInsnNode(Opcodes.IFNULL, label));
                 insnList.add(new InsnNode(Opcodes.ACONST_NULL));
                 insnList.add(new InsnNode(Opcodes.ATHROW));
                 break;
@@ -257,6 +306,14 @@ public class FlowObfuscator implements IClassProcessor {
                     insnList.add(ifGoto(insnNode.label));
                     method.instructions.insert(insnNode, insnList);
                     method.instructions.remove(insnNode);
+                }
+                if (abstractInsnNode instanceof MethodInsnNode && badConcat.getObject()) {
+                    MethodInsnNode insnNode = (MethodInsnNode) abstractInsnNode;
+
+                    if (insnNode.owner.equals("java/lang/StringBuilder") && insnNode.name.equals("toString")) {
+                        method.instructions.insert(insnNode, new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/String", "valueOf", "(Ljava/lang/Object;)Ljava/lang/String;", false));
+                        method.instructions.remove(insnNode);
+                    }
                 }
                 if (replaceGoto.getObject() && abstractInsnNode instanceof JumpInsnNode && (abstractInsnNode.getOpcode() >= Opcodes.IFEQ && abstractInsnNode.getOpcode() <= Opcodes.IF_ACMPNE || abstractInsnNode.getOpcode() >= Opcodes.IFNULL && abstractInsnNode.getOpcode() <= Opcodes.IFNONNULL)) {
                     JumpInsnNode insnNode = (JumpInsnNode) abstractInsnNode;

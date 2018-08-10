@@ -25,6 +25,13 @@ public class NameUtils {
     private static int METHODS = 0;
     private static int FIELDS = 0;
 
+    /**
+     * By ItzSomebody
+     */
+    private final static char[] DICT_SPACES = new char[]{
+            '\u2000', '\u2001', '\u2002', '\u2003', '\u2004', '\u2005', '\u2006', '\u2007', '\u2008', '\u2009', '\u200A', '\u200B', '\u200C', '\u200D', '\u200E', '\u200F'
+    };
+
     private static int randInt(int min, int max) {
         return random.nextInt(max - min) + min;
     }
@@ -59,6 +66,22 @@ public class NameUtils {
 //        USED_CLASSNAMES.add(stringBuilder.toString());
 //        return stringBuilder.toString();
     }
+
+    /**
+     * @param len Length of the string to generate.
+     * @return a built {@link String} consisting of DICT_SPACES.
+     * @author ItzSomebody
+     * Generates a {@link String} consisting only of DICT_SPACES.
+     * Stole this idea from NeonObf and Smoke.
+     */
+    public static String crazyString(int len) {
+        char[] buildString = new char[len];
+        for (int i = 0; i < len; i++) {
+            buildString[i] = DICT_SPACES[random.nextInt(DICT_SPACES.length)];
+        }
+        return new String(buildString);
+    }
+
 
     public static String generateMethodName(final String className, String desc) {
 //        if (!USED_METHODNAMES.containsKey(className)) {

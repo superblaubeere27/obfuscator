@@ -2,8 +2,10 @@ package me.superblaubeere27.jobf.processors;
 
 import me.superblaubeere27.jobf.IClassProcessor;
 import me.superblaubeere27.jobf.JObfImpl;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.*;
+import me.superblaubeere27.jobf.util.values.DeprecationLevel;
+import me.superblaubeere27.jobf.util.values.EnabledValue;
+import me.superblaubeere27.jobf.utils.NameUtils;
+import org.objectweb.asm.tree.ClassNode;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -13,6 +15,8 @@ import java.util.Random;
 public class CrasherProcessor implements IClassProcessor {
     private static Random random = new Random();
     private static List<String> exceptions = new ArrayList<>();
+
+    private EnabledValue enabled = new EnabledValue("Crasher", DeprecationLevel.GOOD, true);
 
     static {
         exceptions.add("java/lang/Throwable");
@@ -34,43 +38,51 @@ public class CrasherProcessor implements IClassProcessor {
     @Override
     public void process(ClassNode node) {
         if (Modifier.isInterface(node.access)) return;
+        if (!enabled.getObject()) return;
 
-        for (MethodNode method : node.methods) {
-            if (Modifier.isAbstract(method.access) || method.instructions.size() <= 0)
-                return;
+        /*
+         * By ItzSomebody
+         */
+        if (node.signature == null) {
+            node.signature = NameUtils.crazyString(10);
+        }
 
-            LabelNode tryStart,
-                    tryFinalStart, // At end must jump over catch block (goto tryCatchEnd)
-                    tryCatchStart,
-                    tryCatchEnd;
+//        for (MethodNode method : node.methods) {
+//            if (Modifier.isAbstract(method.access) || method.instructions.size() <= 0)
+//                return;
 
-            tryStart = new LabelNode();
-            tryFinalStart = new LabelNode();
-            tryCatchStart = new LabelNode();
-            tryCatchEnd = new LabelNode();
-
-            InsnList list = new InsnList();
-
-            list.add(tryStart); // Auto iterator.next()
-            list.add(method.instructions);
-            list.add(tryFinalStart);
-            {
-                method.instructions.add(
-                        new JumpInsnNode(
-                                Opcodes.GOTO,
-                                tryCatchEnd
-                        )
-                );
-            }
-            list.add(tryCatchStart);
-            list.add(
-                    new InsnNode(
-                            Opcodes.ATHROW
-                    )
-            );
-            list.add(tryCatchEnd);
-            method.tryCatchBlocks.add(new TryCatchBlockNode(tryStart, tryFinalStart, tryCatchStart, "java/lang/Exception"));
-            method.instructions = list;
+//            LabelNode tryStart,
+//                    tryFinalStart, // At end must jump over catch block (goto tryCatchEnd)
+//                    tryCatchStart,
+//                    tryCatchEnd;
+//
+//            tryStart = new LabelNode();
+//            tryFinalStart = new LabelNode();
+//            tryCatchStart = new LabelNode();
+//            tryCatchEnd = new LabelNode();
+//
+//            InsnList list = new InsnList();
+//
+//            list.add(tryStart); // Auto iterator.next()
+//            list.add(method.instructions);
+//            list.add(tryFinalStart);
+//            {
+//                method.instructions.add(
+//                        new JumpInsnNode(
+//                                Opcodes.GOTO,
+//                                tryCatchEnd
+//                        )
+//                );
+//            }
+//            list.add(tryCatchStart);
+//            list.add(
+//                    new InsnNode(
+//                            Opcodes.ATHROW
+//                    )
+//            );
+//            list.add(tryCatchEnd);
+//            method.tryCatchBlocks.add(new TryCatchBlockNode(tryStart, tryFinalStart, tryCatchStart, "java/lang/Exception"));
+//            method.instructions = list;
 //            String ex1 = exceptions.get(random.nextInt(exceptions.size()));
 //            String ex2 = exceptions.get(random.nextInt(exceptions.size()));
 //
@@ -109,7 +121,7 @@ public class CrasherProcessor implements IClassProcessor {
 //            insnList.add(labelNode5);
 //
 //            method.instructions = insnList;
-        }
+//        }
 
         inst.setWorkDone();
     }

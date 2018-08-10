@@ -223,6 +223,22 @@ public class NodeUtils {
         }
     }
 
+    public static InsnList nullPush() {
+        InsnList insns = new InsnList();
+
+        insns.add(new InsnNode(Opcodes.ACONST_NULL));
+
+        return insns;
+    }
+
+    public static InsnList notNullPush() {
+        InsnList insns = new InsnList();
+
+        insns.add(new LdcInsnNode(Math.random() * 100));
+
+        return insns;
+    }
+
 //    public static int getTypeLoad(Type argumentType) {
 //        if (argumentType.getOpcode()) {
 //
