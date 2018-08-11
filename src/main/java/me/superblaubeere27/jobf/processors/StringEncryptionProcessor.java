@@ -26,7 +26,7 @@ public class StringEncryptionProcessor implements IClassProcessor {
     private JObfImpl inst;
     private List<IStringEncryptionAlgorithm> algorithmList = new ArrayList<>();
     private EnabledValue enabled = new EnabledValue(PROCESSOR_NAME, DeprecationLevel.GOOD, true);
-    private BooleanValue hideStrings = new BooleanValue(PROCESSOR_NAME, "HideStrings", DeprecationLevel.GOOD, false);
+    private BooleanValue hideStrings = new BooleanValue(PROCESSOR_NAME, "HideStrings", DeprecationLevel.OK, false);
     private BooleanValue aes = new BooleanValue(PROCESSOR_NAME, "AES", DeprecationLevel.OK, false);
 
     public StringEncryptionProcessor(JObfImpl inst) {

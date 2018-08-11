@@ -21,6 +21,7 @@ import org.objectweb.asm.commons.Remapper;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class CustomRemapper extends Remapper {
     private Map<String, String> map = new HashMap<>();
@@ -171,18 +172,16 @@ public class CustomRemapper extends Remapper {
     }
 
     public boolean map(String old, String newName) {
+        Objects.requireNonNull(newName);
         if (mapReversed.containsKey(newName)) {
             return false;
         }
-        int lin = old.lastIndexOf('/');
-        String parentPackage = old.substring(0, lin);
-
 
         map.put(old, newName);
         mapReversed.put(newName, old);
-        NameUtils.mapClass(old, map(old));
+        NameUtils.mapClass(old, newName);
+        System.out.println("Mapped " + old + " to " + newName);
 //        System.out.println(map(old));
-        System.out.println("Mapped " + old + " to " + map(old));
         return true;
     }
 

@@ -33,7 +33,7 @@ public class LineNumberRemover implements IClassProcessor {
         TYPES.add("Ljava/lang/String;");
     }
 
-    private EnabledValue enabled = new EnabledValue(PROCESSOR_NAME, DeprecationLevel.GOOD, false);
+    private EnabledValue enabled = new EnabledValue(PROCESSOR_NAME, DeprecationLevel.GOOD, true);
     private BooleanValue renameValues = new BooleanValue(PROCESSOR_NAME, "Rename local variables", DeprecationLevel.GOOD, true);
     private BooleanValue removeLineNumbers = new BooleanValue(PROCESSOR_NAME, "Remove Line Numbers", DeprecationLevel.GOOD, true);
     private BooleanValue removeDebugNames = new BooleanValue(PROCESSOR_NAME, "Remove Debug Names", DeprecationLevel.GOOD, true);

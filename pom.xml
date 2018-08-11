@@ -1,5 +1,9 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0">
     <modelVersion>4.0.0</modelVersion>
+    <packaging>pom</packaging>
+    <modules>
+        <module>watermark</module>
+    </modules>
 
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
@@ -8,7 +12,7 @@
 
     <groupId>me.superblaubeere27</groupId>
     <artifactId>obfuscator</artifactId>
-    <version>1.65</version>
+    <version>1.7</version>
 
     <dependencies>
         <dependency>

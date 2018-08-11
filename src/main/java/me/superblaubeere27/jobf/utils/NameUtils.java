@@ -61,7 +61,7 @@ public class NameUtils {
         int id = packageMap.get(packageName);
         packageMap.put(packageName, id + 1);
 
-        return Util.toIl(id++);
+        return Util.toIl(id);
     }
 
     /**

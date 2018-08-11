@@ -35,11 +35,10 @@ public class InnerClassRemover implements INameObfuscationProcessor {
                 if (classNode.name.contains("/")) {
                     String packageName = classNode.name.substring(0, classNode.name.lastIndexOf('/'));
                     newName = packageName + "/" + NameUtils.generateClassName(packageName);
-                }
-
-                if (newName == null) NameUtils.generateClassName();
+                } else newName = NameUtils.generateClassName();
 
                 String mappedName;
+
 
                 do {
                     mappedName = newName;
