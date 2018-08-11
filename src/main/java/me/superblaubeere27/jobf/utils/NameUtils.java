@@ -13,8 +13,7 @@ import java.util.Random;
  * Fume - By CCBlueX(Marco)
  */
 public class NameUtils {
-
-    private static int classNames = 0;
+    private static HashMap<String, Integer> packageMap = new HashMap<>();
     private static Map<String, HashMap<String, Integer>> USED_METHODNAMES = new HashMap<>();
     private static Map<String, Integer> USED_FIELDNAMES = new HashMap<>();
 
@@ -51,20 +50,18 @@ public class NameUtils {
     }
 
     public static String generateClassName() {
-//        if(iL) {
-//            return Integer.toBinaryString(iL_int++).replace('0', 'I').replace('1', 'l');
-//        }
-        return Util.toIl(classNames++);
-//        final StringBuilder stringBuilder = new StringBuilder();
-//        final int lenght = getLenght();
-//        while(stringBuilder.length() < lenght || USED_CLASSNAMES.contains(stringBuilder.toString())
-////                || Fume.fume.obfuscator.files.containsKey(stringBuilder.toString() + ".class")
-//                ) {
-//            final int randIndex = (int)(Math.random() * CLASS_CHARACTERS.length());
-//            stringBuilder.append(CLASS_CHARACTERS.charAt(randIndex));
-//        }
-//        USED_CLASSNAMES.add(stringBuilder.toString());
-//        return stringBuilder.toString();
+        return generateClassName("");
+    }
+
+
+    public static String generateClassName(String packageName) {
+        if (!packageMap.containsKey(packageName))
+            packageMap.put(packageName, 0);
+
+        int id = packageMap.get(packageName);
+        packageMap.put(packageName, id + 1);
+
+        return Util.toIl(id++);
     }
 
     /**

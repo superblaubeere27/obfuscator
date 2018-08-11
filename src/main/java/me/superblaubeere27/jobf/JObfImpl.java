@@ -3,7 +3,7 @@ package me.superblaubeere27.jobf;
 import com.google.common.io.ByteStreams;
 import me.superblaubeere27.jobf.processors.*;
 import me.superblaubeere27.jobf.processors.name.INameObfuscationProcessor;
-import me.superblaubeere27.jobf.processors.name.NameObfuscation;
+import me.superblaubeere27.jobf.processors.name.InnerClassRemover;
 import me.superblaubeere27.jobf.processors.packager.Packager;
 import me.superblaubeere27.jobf.util.Util;
 import me.superblaubeere27.jobf.util.script.JObfScript;
@@ -341,11 +341,15 @@ public class JObfImpl {
         processors.add(new ShuffleMembersProcessor(this));
 
 
-        nameObfuscationProcessors.add(new NameObfuscation());
+//        nameObfuscationProcessors.add(new NameObfuscation());
+        nameObfuscationProcessors.add(new InnerClassRemover());
         processors.add(new CrasherProcessor(this));
         processors.add(new ReferenceProxy(this));
 
         for (IClassProcessor processor : processors) {
+            ValueManager.registerClass(processor);
+        }
+        for (INameObfuscationProcessor processor : nameObfuscationProcessors) {
             ValueManager.registerClass(processor);
         }
 //        for (Value<?> value : ValueManager.getValues()) {
@@ -404,14 +408,20 @@ public class JObfImpl {
                 String entryName = entry.getName();
 
                 if (entryName.endsWith(".class")) {
-                    ClassReader cr = new ClassReader(entryData);
-                    ClassNode cn = new ClassNode();
+                    try {
+                        ClassReader cr = new ClassReader(entryData);
+                        ClassNode cn = new ClassNode();
 
 
-                    //ca = new LineInjectorAdaptor(ASM4, cn);
+                        //ca = new LineInjectorAdaptor(ASM4, cn);
 
-                    cr.accept(cn, 0);
-                    classes.put(entryName, cn);
+                        cr.accept(cn, 0);
+                        classes.put(entryName, cn);
+                    } catch (Exception e) {
+                        System.err.println("Failed to read class " + entryName);
+                        e.printStackTrace();
+                        files.put(entryName, entryData);
+                    }
 
                 } else {
                     if (entryName.equals("META-INF/MANIFEST.MF")) {
@@ -428,11 +438,11 @@ public class JObfImpl {
             }
             libraryClassnodes.addAll(classes.values());
 
-            if (nameobf) {
+//            if (nameobf) {
                 for (INameObfuscationProcessor nameObfuscationProcessor : nameObfuscationProcessors) {
                     nameObfuscationProcessor.transformPost(this, classes);
                 }
-            }
+//            }
 
             int processed = 0;
 

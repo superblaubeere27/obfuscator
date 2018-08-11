@@ -6,8 +6,13 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
+import org.objectweb.asm.util.Printer;
+import org.objectweb.asm.util.Textifier;
+import org.objectweb.asm.util.TraceMethodVisitor;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.function.Predicate;
@@ -56,6 +61,32 @@ public class NodeUtils {
         TYPE_TO_STORE.put(Type.DOUBLE_TYPE, Opcodes.DLOAD);
     }
 
+    private static final Printer printer = new Textifier();
+    private static final TraceMethodVisitor methodPrinter = new TraceMethodVisitor(printer);
+
+    public static String prettyprint(AbstractInsnNode insnNode) {
+        insnNode.accept(methodPrinter);
+        StringWriter sw = new StringWriter();
+        printer.print(new PrintWriter(sw));
+        printer.getText().clear();
+        return sw.toString().trim();
+    }
+
+    public static String prettyprint(InsnList insnNode) {
+        insnNode.accept(methodPrinter);
+        StringWriter sw = new StringWriter();
+        printer.print(new PrintWriter(sw));
+        printer.getText().clear();
+        return sw.toString().trim();
+    }
+
+    public static String prettyprint(MethodNode insnNode) {
+        insnNode.accept(methodPrinter);
+        StringWriter sw = new StringWriter();
+        printer.print(new PrintWriter(sw));
+        printer.getText().clear();
+        return sw.toString().trim();
+    }
     public static AbstractInsnNode getWrapperMethod(Type type) {
         if (TYPE_TO_WRAPPER.containsKey(type)) {
             return new MethodInsnNode(Opcodes.INVOKESTATIC, TYPE_TO_WRAPPER.get(type), "valueOf", "(" + type.toString() + ")L" + TYPE_TO_WRAPPER.get(type) + ";", false);
@@ -234,8 +265,10 @@ public class NodeUtils {
     public static InsnList notNullPush() {
         InsnList insns = new InsnList();
 
-        insns.add(new LdcInsnNode(Math.random() * 100));
-
+//        insns.add(new LdcInsnNode(Math.random() * 100));
+//        insns.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Double", "valueOf", "(D)Ljava/lang/Double;", false));
+//        insns.add(new TypeInsnNode());
+        insns.add(new LdcInsnNode(Type.getType("Ljava/lang/System;")));
         return insns;
     }
 

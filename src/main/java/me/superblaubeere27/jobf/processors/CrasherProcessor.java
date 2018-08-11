@@ -16,7 +16,7 @@ public class CrasherProcessor implements IClassProcessor {
     private static Random random = new Random();
     private static List<String> exceptions = new ArrayList<>();
 
-    private EnabledValue enabled = new EnabledValue("Crasher", DeprecationLevel.GOOD, true);
+    private EnabledValue enabled = new EnabledValue("Crasher", DeprecationLevel.GOOD, false);
 
     static {
         exceptions.add("java/lang/Throwable");

@@ -197,4 +197,31 @@ public class Util {
                 throw new IllegalArgumentException("Type not known.");
         }
     }
+
+    public static String modToString(int mod) {
+        StringBuilder sb = new StringBuilder();
+        int len;
+
+        if ((mod & ACC_SYNTHETIC) != 0) sb.append("[syntetic] ");
+        if ((mod & ACC_BRIDGE) != 0) sb.append("[bridge] ");
+
+        if ((mod & ACC_PUBLIC) != 0) sb.append("public ");
+        if ((mod & ACC_PROTECTED) != 0) sb.append("protected ");
+        if ((mod & ACC_PRIVATE) != 0) sb.append("private ");
+
+        /* Canonical order */
+        if ((mod & ACC_ABSTRACT) != 0) sb.append("abstract ");
+        if ((mod & ACC_STATIC) != 0) sb.append("static ");
+        if ((mod & ACC_FINAL) != 0) sb.append("final ");
+        if ((mod & ACC_TRANSIENT) != 0) sb.append("transient ");
+        if ((mod & ACC_VOLATILE) != 0) sb.append("volatile ");
+        if ((mod & ACC_SYNCHRONIZED) != 0) sb.append("synchronized ");
+        if ((mod & ACC_NATIVE) != 0) sb.append("native ");
+        if ((mod & ACC_STRICT) != 0) sb.append("strictfp ");
+        if ((mod & ACC_INTERFACE) != 0) sb.append("interface ");
+
+        if ((len = sb.length()) > 0)    /* trim trailing space */
+            return sb.toString().substring(0, len - 1);
+        return "";
+    }
 }

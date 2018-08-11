@@ -11,6 +11,7 @@ import me.superblaubeere27.jobf.utils.Templates;
 
 import javax.swing.*;
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
@@ -132,7 +133,7 @@ public class JObf {
             String scriptContent = "";
 
             if (options.has("scriptFile")) {
-                scriptContent = new String(Files.readAllBytes(((File) options.valueOf("scriptFile")).toPath()), "UTF-8");
+                scriptContent = new String(Files.readAllBytes(((File) options.valueOf("scriptFile")).toPath()), StandardCharsets.UTF_8);
             }
 
             JObfScript script = new JObfScript(scriptContent);

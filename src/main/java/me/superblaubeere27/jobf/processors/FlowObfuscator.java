@@ -30,9 +30,23 @@ public class FlowObfuscator implements IClassProcessor {
     }
 
     private static InsnList ifGoto(LabelNode label) {
-        InsnList insnList = new InsnList();
+        InsnList insnList;
 
-        int i = random.nextInt(15);
+        int i = random.nextInt(14);
+
+        insnList = generateIfGoto(i, label);
+        insnList.add(new InsnNode(Opcodes.ACONST_NULL));
+        insnList.add(new InsnNode(Opcodes.ATHROW));
+
+        for (int j = 0; j < random.nextInt(2) + 1; j++) {
+            insnList = NumberObfuscationProcessor.obfuscateInsnList(insnList);
+        }
+
+        return insnList;
+    }
+
+    public static InsnList generateIfGoto(int i, LabelNode label) {
+        InsnList insnList = new InsnList();
 
         switch (i) {
             case 0: {
@@ -47,8 +61,6 @@ public class FlowObfuscator implements IClassProcessor {
                 insnList.add(NodeUtils.generateIntPush(first));
                 insnList.add(NodeUtils.generateIntPush(second));
                 insnList.add(new JumpInsnNode(Opcodes.IF_ICMPNE, label));
-                insnList.add(new InsnNode(Opcodes.ACONST_NULL));
-                insnList.add(new InsnNode(Opcodes.ATHROW));
                 break;
             }
             case 1: {
@@ -63,8 +75,6 @@ public class FlowObfuscator implements IClassProcessor {
                 insnList.add(NodeUtils.generateIntPush(first));
                 insnList.add(NodeUtils.generateIntPush(second));
                 insnList.add(new JumpInsnNode(Opcodes.IF_ICMPEQ, label));
-                insnList.add(new InsnNode(Opcodes.ACONST_NULL));
-                insnList.add(new InsnNode(Opcodes.ATHROW));
                 break;
             }
             case 2: {
@@ -79,8 +89,6 @@ public class FlowObfuscator implements IClassProcessor {
                 insnList.add(NodeUtils.generateIntPush(first));
                 insnList.add(NodeUtils.generateIntPush(second));
                 insnList.add(new JumpInsnNode(Opcodes.IF_ICMPLT, label));
-                insnList.add(new InsnNode(Opcodes.ACONST_NULL));
-                insnList.add(new InsnNode(Opcodes.ATHROW));
                 break;
             }
             case 3: {
@@ -95,8 +103,6 @@ public class FlowObfuscator implements IClassProcessor {
                 insnList.add(NodeUtils.generateIntPush(first));
                 insnList.add(NodeUtils.generateIntPush(second));
                 insnList.add(new JumpInsnNode(Opcodes.IF_ICMPGE, label));
-                insnList.add(new InsnNode(Opcodes.ACONST_NULL));
-                insnList.add(new InsnNode(Opcodes.ATHROW));
                 break;
             }
             case 4: {
@@ -111,8 +117,6 @@ public class FlowObfuscator implements IClassProcessor {
                 insnList.add(NodeUtils.generateIntPush(first));
                 insnList.add(NodeUtils.generateIntPush(second));
                 insnList.add(new JumpInsnNode(Opcodes.IF_ICMPGT, label));
-                insnList.add(new InsnNode(Opcodes.ACONST_NULL));
-                insnList.add(new InsnNode(Opcodes.ATHROW));
                 break;
             }
             case 5: {
@@ -127,40 +131,41 @@ public class FlowObfuscator implements IClassProcessor {
                 insnList.add(NodeUtils.generateIntPush(first));
                 insnList.add(NodeUtils.generateIntPush(second));
                 insnList.add(new JumpInsnNode(Opcodes.IF_ICMPLE, label));
-                insnList.add(new InsnNode(Opcodes.ACONST_NULL));
-                insnList.add(new InsnNode(Opcodes.ATHROW));
                 break;
             }
-            case 7: {
+            case 6: {
                 int first;
 
                 first = random.nextInt(5) + 1;
 
                 insnList.add(NodeUtils.generateIntPush(first));
                 insnList.add(new JumpInsnNode(Opcodes.IFNE, label));
-                insnList.add(new InsnNode(Opcodes.ACONST_NULL));
-                insnList.add(new InsnNode(Opcodes.ATHROW));
                 break;
             }
-            case 8: {
+            case 7: {
                 int first = 0;
 
 
                 insnList.add(NodeUtils.generateIntPush(first));
                 insnList.add(new JumpInsnNode(Opcodes.IFEQ, label));
-                insnList.add(new InsnNode(Opcodes.ACONST_NULL));
-                insnList.add(new InsnNode(Opcodes.ATHROW));
+                break;
+            }
+            case 8: {
+                int second;
+
+                second = random.nextInt(5);
+
+                insnList.add(NodeUtils.generateIntPush(second));
+                insnList.add(new JumpInsnNode(Opcodes.IFGE, label));
                 break;
             }
             case 9: {
                 int second;
 
-                second = -random.nextInt(5) - 1;
+                second = random.nextInt(5) + 1;
 
                 insnList.add(NodeUtils.generateIntPush(second));
-                insnList.add(new JumpInsnNode(Opcodes.IFGE, label));
-                insnList.add(new InsnNode(Opcodes.ACONST_NULL));
-                insnList.add(new InsnNode(Opcodes.ATHROW));
+                insnList.add(new JumpInsnNode(Opcodes.IFGT, label));
                 break;
             }
             case 10: {
@@ -169,50 +174,28 @@ public class FlowObfuscator implements IClassProcessor {
                 second = -random.nextInt(5);
 
                 insnList.add(NodeUtils.generateIntPush(second));
-                insnList.add(new JumpInsnNode(Opcodes.IFGT, label));
-                insnList.add(new InsnNode(Opcodes.ACONST_NULL));
-                insnList.add(new InsnNode(Opcodes.ATHROW));
+                insnList.add(new JumpInsnNode(Opcodes.IFLE, label));
                 break;
             }
             case 11: {
                 int second;
 
-                second = random.nextInt(5) + 1;
-
-                insnList.add(NodeUtils.generateIntPush(second));
-                insnList.add(new JumpInsnNode(Opcodes.IFLE, label));
-                insnList.add(new InsnNode(Opcodes.ACONST_NULL));
-                insnList.add(new InsnNode(Opcodes.ATHROW));
-                break;
-            }
-            case 12: {
-                int second;
-
-                second = random.nextInt(5);
+                second = -random.nextInt(5) - 1;
 
                 insnList.add(NodeUtils.generateIntPush(second));
                 insnList.add(new JumpInsnNode(Opcodes.IFLT, label));
+                break;
+            }
+            case 12: {
                 insnList.add(new InsnNode(Opcodes.ACONST_NULL));
-                insnList.add(new InsnNode(Opcodes.ATHROW));
+                insnList.add(new JumpInsnNode(Opcodes.IFNULL, label));
                 break;
             }
             case 13: {
-                insnList.add(new InsnNode(Opcodes.ACONST_NULL));
-                insnList.add(new JumpInsnNode(Opcodes.IFNULL, label));
-                insnList.add(new InsnNode(Opcodes.ACONST_NULL));
-                insnList.add(new InsnNode(Opcodes.ATHROW));
-                break;
-            }
-            case 14: {
                 insnList.add(NodeUtils.notNullPush());
-                insnList.add(new JumpInsnNode(Opcodes.IFNULL, label));
-                insnList.add(new InsnNode(Opcodes.ACONST_NULL));
-                insnList.add(new InsnNode(Opcodes.ATHROW));
+                insnList.add(new JumpInsnNode(Opcodes.IFNONNULL, label));
                 break;
             }
-        }
-        for (int j = 0; j < random.nextInt(2) + 1; j++) {
-            insnList = NumberObfuscationProcessor.obfuscateInsnList(insnList);
         }
         return insnList;
     }
