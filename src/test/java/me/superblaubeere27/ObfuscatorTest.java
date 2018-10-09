@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -28,7 +29,7 @@ public class ObfuscatorTest {
 //            Files.copy(new URL("https://github.com/SB27Team/JavaFeatureTest/raw/master/JavaFeatureTest.jar").openStream(), input.toPath());
             ByteStreams.copy(new URL("https://github.com/SB27Team/JavaFeatureTest/raw/master/JavaFeatureTest.jar").openStream(), new FileOutputStream(input));
 //            impl.addProcessors();
-            JObfImpl.INSTANCE.processJar(input.getAbsolutePath(), (obfuscatedFile = File.createTempFile("obf_", ".jar")).getAbsolutePath(), 0);
+            JObfImpl.INSTANCE.processJar(input.getAbsolutePath(), (obfuscatedFile = File.createTempFile("obf_", ".jar")).getAbsolutePath(), new ArrayList<>(), 0);
         } catch (IOException e) {
             e.printStackTrace();
         }

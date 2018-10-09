@@ -23,9 +23,11 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.List;
 
 public class GUI extends JFrame {
     public JTextArea logArea;
@@ -46,6 +48,10 @@ public class GUI extends JFrame {
     private JList<Template> templates;
     private JButton loadTemplateButton;
     private JCheckBox autoScroll;
+    private JList<String> libraries;
+    private JButton addButton;
+    private JButton removeButton;
+    private List<String> libraryList = new ArrayList<>();
 
     public GUI() {
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -87,10 +93,12 @@ public class GUI extends JFrame {
             if (name != null) {
                 buildConfig();
                 try {
-                    Configuration configuration = ConfigManager.loadConfig(new String(Files.readAllBytes(Paths.get(name)), "UTF-8"));
+                    Configuration configuration = ConfigManager.loadConfig(new String(Files.readAllBytes(Paths.get(name)), StandardCharsets.UTF_8));
                     inputTextField.setText(configuration.getInput());
                     outputTextField.setText(configuration.getOutput());
                     scriptArea.setText(configuration.getScript());
+                    libraryList = new ArrayList<>(configuration.getLibraries());
+                    updateLibraries();
                     initValues();
                     System.gc();
                 } catch (IOException e1) {
@@ -116,8 +124,7 @@ public class GUI extends JFrame {
         initValues();
         loadTemplateButton.addActionListener(e -> {
             if (templates.getSelectedIndex() != -1) {
-                Configuration config = null;
-                config = ConfigManager.loadConfig(templates.getSelectedValue().getJson());
+                Configuration config = ConfigManager.loadConfig(templates.getSelectedValue().getJson());
                 initValues();
                 if (config.getScript() != null && !config.getScript().isEmpty()) {
                     scriptArea.setText(config.getScript());
@@ -126,6 +133,32 @@ public class GUI extends JFrame {
                 JOptionPane.showMessageDialog(GUI.this, "Maybe you should select a template before applying it :thinking:", "Hmmmm...", JOptionPane.ERROR_MESSAGE);
             }
         });
+
+        addButton.addActionListener(e -> {
+            String file = Util.chooseDirectoryOrFile(new File(System.getProperty("java.home")), GUI.this);
+
+            if (file != null) {
+                if (new File(file).isDirectory() || Util.checkZip(file)) {
+                    libraryList.add(file);
+                    updateLibraries();
+                } else {
+                    JOptionPane.showMessageDialog(GUI.this, "This file isn't a valid file. Allowed: ZIP-Files, Directories", "ERROR", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+        removeButton.addActionListener(e -> {
+            if (libraries.getSelectedIndex() != -1) {
+                libraryList.remove(libraries.getSelectedIndex());
+                updateLibraries();
+            } else {
+                JOptionPane.showMessageDialog(GUI.this, "Maybe you should select a library before removing it :thinking:", "Hmmmm...", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+    }
+
+    private void updateLibraries() {
+        Object[] libraries = libraryList.toArray();
+        this.libraries.setListData(Arrays.copyOf(libraries, libraries.length, String[].class));
     }
 
     public void scrollDown() {
@@ -200,7 +233,7 @@ public class GUI extends JFrame {
 
 
     private void buildConfig() {
-        configPanel.setText(ConfigManager.generateConfig(new Configuration(inputTextField.getText(), outputTextField.getText(), scriptArea.getText()), prettyPrintCheckBox.isSelected()));
+        configPanel.setText(ConfigManager.generateConfig(new Configuration(inputTextField.getText(), outputTextField.getText(), scriptArea.getText(), libraryList), prettyPrintCheckBox.isSelected()));
     }
 
 
@@ -225,7 +258,7 @@ public class GUI extends JFrame {
             new Thread(() -> {
                 obfuscateButton.setEnabled(false);
                 try {
-                    JObfImpl.INSTANCE.processJar(inputTextField.getText(), outputTextField.getText(), 0);
+                    JObfImpl.INSTANCE.processJar(inputTextField.getText(), outputTextField.getText(), libraryList, 0);
                 } catch (Exception e) {
                     e.printStackTrace();
                     JOptionPane.showMessageDialog(this, e.toString(), "ERROR", JOptionPane.ERROR_MESSAGE);

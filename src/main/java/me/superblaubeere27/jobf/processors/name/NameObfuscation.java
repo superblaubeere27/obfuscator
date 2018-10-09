@@ -1,6 +1,8 @@
 package me.superblaubeere27.jobf.processors.name;
 
 import me.superblaubeere27.jobf.JObfImpl;
+import me.superblaubeere27.jobf.util.values.DeprecationLevel;
+import me.superblaubeere27.jobf.util.values.EnabledValue;
 import me.superblaubeere27.jobf.utils.ClassTree;
 import me.superblaubeere27.jobf.utils.NameUtils;
 import org.objectweb.asm.Opcodes;
@@ -14,14 +16,20 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class NameObfuscation implements INameObfuscationProcessor {
+    private static String PROCESSOR_NAME = "NameObfuscation";
+
+    private EnabledValue enabled = new EnabledValue(PROCESSOR_NAME, DeprecationLevel.OK, false);
 
     @Override
     public void transformPost(JObfImpl inst, HashMap<String, ClassNode> nodes) {
+        if (!enabled.getObject()) return;
+
+        NameUtils.setup("", "", "", true);
+
         final List<ClassNode> classNodes = new ArrayList<>(JObfImpl.classes.values());
 
         final Map<String, ClassNode> updatedClasses = new HashMap<>();
         final CustomRemapper remapper = new CustomRemapper();
-
 
         for (final ClassNode classNode : classNodes) {
             if (!inst.script.remapClass(classNode)) continue;
@@ -257,9 +265,17 @@ public class NameObfuscation implements INameObfuscationProcessor {
             updatedClasses.put(newNode.name + ".class", newNode);
         }
 
-        updatedClasses.forEach((s, classNode) -> {
-            JObfImpl.classes.put(s, classNode);
-        });
+        updatedClasses.forEach((s, classNode) -> JObfImpl.classes.put(s, classNode));
+
+        if (inst.getMainClass() != null && inst.getMainClass().isEmpty()) {
+            String newMainClass = remapper.getClassName(inst.getMainClass().replace('.', '/'));
+
+            if (newMainClass != null) {
+                inst.setMainClass(newMainClass);
+
+                System.out.println("New Main-class: " + newMainClass);
+            }
+        }
     }
 
 //    @Override

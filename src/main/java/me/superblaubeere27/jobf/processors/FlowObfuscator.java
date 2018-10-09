@@ -7,10 +7,14 @@ import me.superblaubeere27.jobf.util.values.DeprecationLevel;
 import me.superblaubeere27.jobf.util.values.EnabledValue;
 import me.superblaubeere27.jobf.utils.NameUtils;
 import me.superblaubeere27.jobf.utils.NodeUtils;
+import me.superblaubeere27.jobf.utils.VariableProvider;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
+import java.lang.reflect.Modifier;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
 
 public class FlowObfuscator implements IClassProcessor {
@@ -20,6 +24,8 @@ public class FlowObfuscator implements IClassProcessor {
     private static final String PROCESSOR_NAME = "FlowObfuscator";
 
     private EnabledValue enabled = new EnabledValue(PROCESSOR_NAME, DeprecationLevel.GOOD, true);
+    private BooleanValue mangleSwitchesEnabled = new BooleanValue(PROCESSOR_NAME, "Mangle Switches", DeprecationLevel.GOOD, true);
+    private BooleanValue mangleReturn = new BooleanValue(PROCESSOR_NAME, "Mangle Return", DeprecationLevel.GOOD, true);
     private BooleanValue replaceGoto = new BooleanValue(PROCESSOR_NAME, "Replace GOTO", DeprecationLevel.GOOD, true);
     private BooleanValue replaceIf = new BooleanValue(PROCESSOR_NAME, "Replace If", DeprecationLevel.GOOD, true);
     private BooleanValue badPop = new BooleanValue(PROCESSOR_NAME, "Bad POP", DeprecationLevel.GOOD, true);
@@ -27,6 +33,167 @@ public class FlowObfuscator implements IClassProcessor {
 
     public FlowObfuscator(JObfImpl inst) {
         this.inst = inst;
+    }
+
+
+    @Override
+    public void process(ClassNode node) {
+        if (!enabled.getObject()) return;
+
+        HashMap<Integer, MethodNode> jumpMethodMap = new HashMap<>();
+
+        for (MethodNode method : node.methods) {
+            mangleSwitches(method);
+            mangleReturn(method);
+
+            for (AbstractInsnNode abstractInsnNode : method.instructions.toArray()) {
+                if (badPop.getObject() && abstractInsnNode instanceof JumpInsnNode && abstractInsnNode.getOpcode() == Opcodes.GOTO) {
+                    method.instructions.insertBefore(abstractInsnNode, new LdcInsnNode(""));
+                    method.instructions.insertBefore(abstractInsnNode, new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/String", "length", "()I", false));
+                    method.instructions.insertBefore(abstractInsnNode, new InsnNode(Opcodes.POP));
+                }
+                if (replaceIf.getObject() && abstractInsnNode instanceof JumpInsnNode && abstractInsnNode.getOpcode() == Opcodes.GOTO) {
+                    JumpInsnNode insnNode = (JumpInsnNode) abstractInsnNode;
+                    final InsnList insnList = new InsnList();
+                    insnList.add(ifGoto(insnNode.label));
+                    method.instructions.insert(insnNode, insnList);
+                    method.instructions.remove(insnNode);
+                }
+                if (abstractInsnNode instanceof MethodInsnNode && badConcat.getObject()) {
+                    MethodInsnNode insnNode = (MethodInsnNode) abstractInsnNode;
+
+                    if (insnNode.owner.equals("java/lang/StringBuilder") && insnNode.name.equals("toString")) {
+                        method.instructions.insert(insnNode, new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/String", "valueOf", "(Ljava/lang/Object;)Ljava/lang/String;", false));
+                        method.instructions.remove(insnNode);
+                    }
+                }
+                if (replaceGoto.getObject() && abstractInsnNode instanceof JumpInsnNode && (abstractInsnNode.getOpcode() >= Opcodes.IFEQ && abstractInsnNode.getOpcode() <= Opcodes.IF_ACMPNE || abstractInsnNode.getOpcode() >= Opcodes.IFNULL && abstractInsnNode.getOpcode() <= Opcodes.IFNONNULL)) {
+                    JumpInsnNode insnNode = (JumpInsnNode) abstractInsnNode;
+
+                    MethodNode wrapper = jumpMethodMap.get(insnNode.getOpcode());
+
+                    if (wrapper == null) {
+                        wrapper = ifWrapper(insnNode.getOpcode());
+
+                        if (wrapper != null) {
+                            wrapper.name = NameUtils.generateMethodName(node, wrapper.desc);
+                            jumpMethodMap.put(insnNode.getOpcode(), wrapper);
+                        }
+                    }
+
+                    if (wrapper != null) {
+                        final InsnList insnList = new InsnList();
+                        insnList.add(NodeUtils.methodCall(node, wrapper));
+                        insnList.add(new JumpInsnNode(Opcodes.IFEQ, insnNode.label));
+                        method.instructions.insert(insnNode, insnList);
+                        method.instructions.remove(insnNode);
+                    }
+                }
+//                if (abstractInsnNode instanceof MethodInsnNode || abstractInsnNode instanceof FieldInsnNode) {
+//                    method.instructions.insertBefore(abstractInsnNode, new LdcInsnNode(""));
+//                    method.instructions.insertBefore(abstractInsnNode, new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/String", "length", "()I", false));
+//                    method.instructions.insertBefore(abstractInsnNode, new InsnNode(Opcodes.POP));
+//                }
+            }
+//            method.desc = method.desc.replace('Z', 'I');
+        }
+
+        node.methods.addAll(jumpMethodMap.values());
+
+        inst.setWorkDone();
+    }
+
+    private void mangleReturn(MethodNode node) {
+        if (!mangleReturn.getObject() || Modifier.isAbstract(node.access) || Modifier.isNative(node.access)) return;
+
+        VariableProvider variableProvider = new VariableProvider(node);
+
+        LabelNode returnLabel = new LabelNode();
+        Type returnType = Type.getReturnType(node.desc);
+        boolean isVoidType = returnType.getSort() == Type.VOID;
+        int returnSlot = -1;
+
+        if (!isVoidType) {
+            returnSlot = variableProvider.allocateVar();
+        }
+
+        for (AbstractInsnNode abstractInsnNode : node.instructions.toArray()) {
+            if (abstractInsnNode.getOpcode() >= Opcodes.IRETURN && abstractInsnNode.getOpcode() <= Opcodes.RETURN) {
+                InsnList insnList = new InsnList();
+
+                if (!isVoidType) {
+                    insnList.add(new VarInsnNode(returnType.getOpcode(Opcodes.ISTORE), returnSlot));
+                }
+
+                insnList.add(new JumpInsnNode(Opcodes.GOTO, returnLabel));
+
+                node.instructions.insert(abstractInsnNode, insnList);
+                node.instructions.remove(abstractInsnNode);
+            }
+        }
+
+        if (isVoidType) {
+            node.instructions.add(returnLabel);
+            node.instructions.add(new InsnNode(Opcodes.RETURN));
+        } else {
+            node.instructions.add(returnLabel);
+            node.instructions.add(new VarInsnNode(returnType.getOpcode(Opcodes.ILOAD), returnSlot));
+            node.instructions.add(new InsnNode((returnType.getOpcode(Opcodes.IRETURN))));
+        }
+    }
+
+    private void mangleSwitches(MethodNode node) {
+        if (!mangleSwitchesEnabled.getObject() || Modifier.isAbstract(node.access) || Modifier.isNative(node.access))
+            return;
+
+        VariableProvider provider = new VariableProvider(node);
+        int resultSlot = provider.allocateVar();
+
+        for (AbstractInsnNode abstractInsnNode : node.instructions.toArray()) {
+            if (abstractInsnNode instanceof TableSwitchInsnNode) {
+                TableSwitchInsnNode switchInsnNode = (TableSwitchInsnNode) abstractInsnNode;
+
+                InsnList insnList = new InsnList();
+                insnList.add(new VarInsnNode(Opcodes.ISTORE, resultSlot));
+
+                int j = 0;
+
+                for (int i = switchInsnNode.min; i <= switchInsnNode.max; i++) {
+                    insnList.add(new VarInsnNode(Opcodes.ILOAD, resultSlot));
+                    insnList.add(NumberObfuscationProcessor.getInstructions(i));
+                    insnList.add(new JumpInsnNode(Opcodes.IF_ICMPEQ, switchInsnNode.labels.get(j)));
+
+                    j++;
+                }
+                insnList.add(new JumpInsnNode(Opcodes.GOTO, switchInsnNode.dflt));
+
+
+                node.instructions.insert(abstractInsnNode, insnList);
+                node.instructions.remove(abstractInsnNode);
+            }
+            if (abstractInsnNode instanceof LookupSwitchInsnNode) {
+                LookupSwitchInsnNode switchInsnNode = (LookupSwitchInsnNode) abstractInsnNode;
+
+                InsnList insnList = new InsnList();
+                insnList.add(new VarInsnNode(Opcodes.ISTORE, resultSlot));
+
+                List<Integer> keys = switchInsnNode.keys;
+                for (int i = 0; i < keys.size(); i++) {
+                    Integer key = keys.get(i);
+                    insnList.add(new VarInsnNode(Opcodes.ILOAD, resultSlot));
+                    insnList.add(NumberObfuscationProcessor.getInstructions(key));
+                    insnList.add(new JumpInsnNode(Opcodes.IF_ICMPEQ, switchInsnNode.labels.get(i)));
+
+                }
+
+                insnList.add(new JumpInsnNode(Opcodes.GOTO, switchInsnNode.dflt));
+
+
+                node.instructions.insert(abstractInsnNode, insnList);
+                node.instructions.remove(abstractInsnNode);
+            }
+        }
+//        System.out.println(NodeUtils.prettyprint(node));
     }
 
     private static InsnList ifGoto(LabelNode label) {
@@ -268,69 +435,5 @@ public class FlowObfuscator implements IClassProcessor {
             return method;
         }
         return null;
-    }
-
-    @Override
-    public void process(ClassNode node) {
-        if (!enabled.getObject()) return;
-
-        HashMap<Integer, MethodNode> jumpMethodMap = new HashMap<>();
-
-        for (MethodNode method : node.methods) {
-            for (AbstractInsnNode abstractInsnNode : method.instructions.toArray()) {
-                if (badPop.getObject() && abstractInsnNode instanceof JumpInsnNode && abstractInsnNode.getOpcode() == Opcodes.GOTO) {
-                    method.instructions.insertBefore(abstractInsnNode, new LdcInsnNode(""));
-                    method.instructions.insertBefore(abstractInsnNode, new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/String", "length", "()I", false));
-                    method.instructions.insertBefore(abstractInsnNode, new InsnNode(Opcodes.POP));
-                }
-                if (replaceIf.getObject() && abstractInsnNode instanceof JumpInsnNode && abstractInsnNode.getOpcode() == Opcodes.GOTO) {
-                    JumpInsnNode insnNode = (JumpInsnNode) abstractInsnNode;
-                    final InsnList insnList = new InsnList();
-                    insnList.add(ifGoto(insnNode.label));
-                    method.instructions.insert(insnNode, insnList);
-                    method.instructions.remove(insnNode);
-                }
-                if (abstractInsnNode instanceof MethodInsnNode && badConcat.getObject()) {
-                    MethodInsnNode insnNode = (MethodInsnNode) abstractInsnNode;
-
-                    if (insnNode.owner.equals("java/lang/StringBuilder") && insnNode.name.equals("toString")) {
-                        method.instructions.insert(insnNode, new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/String", "valueOf", "(Ljava/lang/Object;)Ljava/lang/String;", false));
-                        method.instructions.remove(insnNode);
-                    }
-                }
-                if (replaceGoto.getObject() && abstractInsnNode instanceof JumpInsnNode && (abstractInsnNode.getOpcode() >= Opcodes.IFEQ && abstractInsnNode.getOpcode() <= Opcodes.IF_ACMPNE || abstractInsnNode.getOpcode() >= Opcodes.IFNULL && abstractInsnNode.getOpcode() <= Opcodes.IFNONNULL)) {
-                    JumpInsnNode insnNode = (JumpInsnNode) abstractInsnNode;
-
-                    MethodNode wrapper = jumpMethodMap.get(insnNode.getOpcode());
-
-                    if (wrapper == null) {
-                        wrapper = ifWrapper(insnNode.getOpcode());
-
-                        if (wrapper != null) {
-                            wrapper.name = NameUtils.generateMethodName(node, wrapper.desc);
-                            jumpMethodMap.put(insnNode.getOpcode(), wrapper);
-                        }
-                    }
-
-                    if (wrapper != null) {
-                        final InsnList insnList = new InsnList();
-                        insnList.add(NodeUtils.methodCall(node, wrapper));
-                        insnList.add(new JumpInsnNode(Opcodes.IFEQ, insnNode.label));
-                        method.instructions.insert(insnNode, insnList);
-                        method.instructions.remove(insnNode);
-                    }
-                }
-//                if (abstractInsnNode instanceof MethodInsnNode || abstractInsnNode instanceof FieldInsnNode) {
-//                    method.instructions.insertBefore(abstractInsnNode, new LdcInsnNode(""));
-//                    method.instructions.insertBefore(abstractInsnNode, new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/String", "length", "()I", false));
-//                    method.instructions.insertBefore(abstractInsnNode, new InsnNode(Opcodes.POP));
-//                }
-            }
-//            method.desc = method.desc.replace('Z', 'I');
-        }
-
-        node.methods.addAll(jumpMethodMap.values());
-
-        inst.setWorkDone();
     }
 }

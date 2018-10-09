@@ -272,6 +272,14 @@ public class NodeUtils {
         return insns;
     }
 
+    public static InsnList debugString(String s) {
+        InsnList insns = new InsnList();
+        insns.add(new LdcInsnNode(s));
+        insns.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/String", "length", "()I", false));
+        insns.add(new InsnNode(Opcodes.POP));
+        return insns;
+    }
+
 //    public static int getTypeLoad(Type argumentType) {
 //        if (argumentType.getOpcode()) {
 //

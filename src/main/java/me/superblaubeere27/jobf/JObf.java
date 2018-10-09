@@ -42,12 +42,20 @@ public class JObf {
                     return;
 //                System.out.println(record.getMessage() + "/" + record.getParameters());
                 if (gui != null) {
-                    gui.logArea.append(String.format(record.getMessage(), record.getParameters()) + "\n");
+                    try {
+                        gui.logArea.append(String.format(record.getMessage(), record.getParameters()) + "\n");
+                    } catch (Exception e) {
+                        gui.logArea.append(record.getMessage() + "\n");
+                    }
                     gui.scrollDown();
 //                    System.out.println("lloool");
                 }
 
-                System.out.println(String.format(record.getMessage(), record.getParameters()));
+                try {
+                    System.out.println(String.format(record.getMessage(), record.getParameters()));
+                } catch (Exception e) {
+                    System.out.println(record.getMessage());
+                }
             }
 
             @Override

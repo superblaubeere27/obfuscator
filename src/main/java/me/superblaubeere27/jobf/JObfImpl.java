@@ -1,10 +1,13 @@
 package me.superblaubeere27.jobf;
 
 import com.google.common.io.ByteStreams;
+import me.superblaubeere27.IPreClassProcessor;
 import me.superblaubeere27.jobf.processors.*;
 import me.superblaubeere27.jobf.processors.name.INameObfuscationProcessor;
 import me.superblaubeere27.jobf.processors.name.InnerClassRemover;
+import me.superblaubeere27.jobf.processors.name.NameObfuscation;
 import me.superblaubeere27.jobf.processors.packager.Packager;
+import me.superblaubeere27.jobf.processors.peephole.ConstantFolder;
 import me.superblaubeere27.jobf.util.Util;
 import me.superblaubeere27.jobf.util.script.JObfScript;
 import me.superblaubeere27.jobf.util.values.ValueManager;
@@ -32,6 +35,7 @@ public class JObfImpl {
     public static final JObfImpl INSTANCE = new JObfImpl();
     //    final static Logger log = Logger.getLogger("Obfuscator");
     public static List<IClassProcessor> processors;
+    public static List<IPreClassProcessor> preProcessors;
     private boolean hwid;
     private byte[] hwidBytes;
     private String packagerMainClass;
@@ -46,7 +50,6 @@ public class JObfImpl {
     private Map<String, ClassTree> hierachy = new HashMap<>();
     private Set<ClassNode> libraryClassnodes = new HashSet<>();
     private List<File> libraryFiles;
-    private boolean nameobf;
     public int computeMode;
     private boolean invokeDynamic;
 
@@ -83,7 +86,6 @@ public class JObfImpl {
         inst.packagerMainClass = packagerMainClass;
         inst.libraryFiles = fileList;
         inst.script = script;
-        inst.nameobf = nameobf;
 
 //        inst.addProcessors();
 
@@ -96,7 +98,7 @@ public class JObfImpl {
             e.printStackTrace();
         }
 
-        inst.processJar(inFile, outFile, mode);
+        inst.processJar(inFile, outFile, new ArrayList<>(), mode);
 
         JObf.log.fine("Processed " + inFile);
     }
@@ -111,57 +113,17 @@ public class JObfImpl {
         this.mainClass = mainClass;
     }
 
-    public static MethodNode getMethod(ClassNode cls, String name, String desc) {
-        for (MethodNode method : cls.methods) {
-            if (method.name.equals(name) && method.desc.equals(desc))
-                return method;
-        }
-        return null;
+    public static HashMap<String, ClassNode> getClasses() {
+        return classes;
     }
 
     public ClassTree getClassTree(String classNode) {
         ClassTree tree = hierachy.get(classNode);
         if (tree == null) {
-            loadHierachyAll(assureLoaded(classNode));
+            loadHierarchyAll(assureLoaded(classNode));
             return getClassTree(classNode);
         }
         return tree;
-    }
-
-    private void loadClasspath() throws IOException {
-        if (libraryFiles != null) {
-            int i = 0;
-            for (File file : libraryFiles) {
-                if (file.isFile()) {
-                    JObf.log.info("Loading " + file.getAbsolutePath() + " (" + (i++ * 100 / libraryFiles.size()) + "%)");
-                    classpath.putAll(loadClasspathFile(file, true));
-                }
-// else {
-//                    File[] files = file.listFiles(child -> child.getName().endsWith(".jar"));
-//                    if (files != null) {
-//                        for (File child : files) {
-//                            classpath.putAll(loadClasspathFile(child, true));
-//                        }
-//                    }
-//                }
-            }
-        }
-//        if (configuration.getLibraries() != null) {
-//            for (File file : configuration.getLibraries()) {
-//                if (file.isFile()) {
-//                    libraries.putAll(loadClasspathFile(file, false));
-//                } else {
-//                    File[] files = file.listFiles(child -> child.getName().endsWith(".jar"));
-//                    if (files != null) {
-//                        for (File child : files) {
-//                            libraries.putAll(loadClasspathFile(child, false));
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//        classpath.putAll(libraries);
-        libraryClassnodes.addAll(classpath.values());
     }
 
     private Map<String, ClassNode> loadClasspathFile(File file, boolean skipCode) throws IOException {
@@ -185,7 +147,47 @@ public class JObfImpl {
         return map;
     }
 
-    public void loadHierachyAll(ClassNode classNode) {
+    private void loadClasspath() throws IOException {
+        if (libraryFiles != null) {
+            int i = 0;
+            for (File file : libraryFiles) {
+                if (file.isFile()) {
+                    JObf.log.info("Loading " + file.getAbsolutePath() + " (" + (i++ * 100 / libraryFiles.size()) + "%)");
+                    classpath.putAll(loadClasspathFile(file, true));
+                } else {
+                    File[] files = file.listFiles(child -> child.getName().endsWith(".jar"));
+                    if (files != null) {
+                        for (File child : files) {
+                            classpath.putAll(loadClasspathFile(child, true));
+                        }
+                    }
+                }
+            }
+        }
+//        if (configuration.getLibraries() != null) {
+//            for (File file : configuration.getLibraries()) {
+//                if (file.isFile()) {
+//                    libraries.putAll(loadClasspathFile(file, false));
+//                } else {
+//                    File[] files = file.listFiles(child -> child.getName().endsWith(".jar"));
+//                    if (files != null) {
+//                        for (File child : files) {
+//                            libraries.putAll(loadClasspathFile(child, false));
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//        classpath.putAll(libraryClassnodes);
+//        libraryClassnodes.
+        libraryClassnodes.addAll(classpath.values());
+    }
+
+    public Map<String, ClassNode> getClasspath() {
+        return classpath;
+    }
+
+    public void loadHierarchyAll(ClassNode classNode) {
         Set<String> processed = new HashSet<>();
         LinkedList<ClassNode> toLoad = new LinkedList<>();
         toLoad.add(classNode);
@@ -294,8 +296,8 @@ public class JObfImpl {
         if (possibleParent.equals(possibleChild)) {
             return true;
         }
-        loadHierachyAll(assureLoaded(possibleParent));
-        loadHierachyAll(assureLoaded(possibleChild));
+        loadHierarchyAll(assureLoaded(possibleParent));
+        loadHierarchyAll(assureLoaded(possibleChild));
         ClassTree parentTree = hierachy.get(possibleParent);
         if (parentTree != null && hierachy.get(possibleChild) != null) {
             List<String> layer = new ArrayList<>();
@@ -331,7 +333,8 @@ public class JObfImpl {
         processors.add(new HWIDProtection(this));
 //        }
 //        if (invokeDynamic) {
-            processors.add(new InvokeDynamic(this));
+        processors.add(new InlineProcessor(this));
+        processors.add(new InvokeDynamic(this));
 //        }
         processors.add(new StringEncryptionProcessor(this));
         processors.add(new NumberObfuscationProcessor(this));
@@ -341,12 +344,18 @@ public class JObfImpl {
         processors.add(new ShuffleMembersProcessor(this));
 
 
-//        nameObfuscationProcessors.add(new NameObfuscation());
+        nameObfuscationProcessors.add(new NameObfuscation());
         nameObfuscationProcessors.add(new InnerClassRemover());
         processors.add(new CrasherProcessor(this));
         processors.add(new ReferenceProxy(this));
 
+        preProcessors = new ArrayList<>();
+        preProcessors.add(new ConstantFolder());
+
         for (IClassProcessor processor : processors) {
+            ValueManager.registerClass(processor);
+        }
+        for (IPreClassProcessor processor : preProcessors) {
             ValueManager.registerClass(processor);
         }
         for (INameObfuscationProcessor processor : nameObfuscationProcessors) {
@@ -361,11 +370,23 @@ public class JObfImpl {
         this.script = script;
     }
 
-    public void processJar(String inFile, String outFile, int mode) {
+    public void processJar(String inFile, String outFile, List<String> libraryList, int mode) {
         ZipInputStream inJar = null;
         ZipOutputStream outJar = null;
 
+        libraryFiles = new ArrayList<>();
+
+        classes = new HashMap<>();
+        libraryClassnodes = new HashSet<>();
+        classpath = new HashMap<>();
+        files = new HashMap<>();
+        hierachy = new HashMap<>();
+
+        for (String s : libraryList) libraryFiles.add(new File(s));
+
         try {
+            System.out.println("Loading classpath");
+            loadClasspath();
             try {
                 inJar = new ZipInputStream(new BufferedInputStream(new FileInputStream(inFile)));
             } catch (FileNotFoundException e) {
@@ -439,12 +460,19 @@ public class JObfImpl {
             libraryClassnodes.addAll(classes.values());
 
 //            if (nameobf) {
-                for (INameObfuscationProcessor nameObfuscationProcessor : nameObfuscationProcessors) {
-                    nameObfuscationProcessor.transformPost(this, classes);
-                }
+            for (INameObfuscationProcessor nameObfuscationProcessor : nameObfuscationProcessors) {
+                nameObfuscationProcessor.transformPost(this, classes);
+            }
+            for (IPreClassProcessor preProcessor : preProcessors) {
+                preProcessor.process(classes.values());
+            }
 //            }
 
             int processed = 0;
+
+            if (Packager.INSTANCE.isEnabled()) {
+                Packager.INSTANCE.init();
+            }
 
             for (Map.Entry<String, ClassNode> stringClassNodeEntry : classes.entrySet()) {
                 String entryName = stringClassNodeEntry.getKey();
@@ -467,19 +495,18 @@ public class JObfImpl {
 
 
                         ClassWriter writer = new ClassWriter(computeMode
-//                            | ClassWriter.COMPUTE_FRAMES
+                                | ClassWriter.COMPUTE_FRAMES
                         );
                         cn.accept(writer);
 
                         entryData = writer.toByteArray();
-                    } catch (Exception e) {
+                    } catch (Throwable e) {
                         ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS
 //                            | ClassWriter.COMPUTE_FRAMES
                         );
                         cn.accept(writer);
 
                         entryData = writer.toByteArray();
-                        e.printStackTrace();
                     }
                     try {
                         if (Packager.INSTANCE.isEnabled()) {
@@ -537,7 +564,7 @@ public class JObfImpl {
             }
             if (Packager.INSTANCE.isEnabled()) {
                 JObf.log.info("Packaging...");
-                byte[] decryptorData = Packager.INSTANCE.generateEncryptionClass(packagerMainClass, mode);
+                byte[] decryptorData = Packager.INSTANCE.generateEncryptionClass();
                 outJar.putNextEntry(new ZipEntry(Packager.INSTANCE.getDecryptorClassName() + ".class"));
                 outJar.write(decryptorData);
                 outJar.closeEntry();
@@ -597,7 +624,7 @@ public class JObfImpl {
         }
 
         ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS
-//                | ClassWriter.COMPUTE_FRAMES
+                | ClassWriter.COMPUTE_FRAMES
         );
         cn.accept(writer);
 

@@ -16,6 +16,7 @@
 
 package me.superblaubeere27.jobf.processors.name;
 
+import me.superblaubeere27.jobf.JObf;
 import me.superblaubeere27.jobf.utils.NameUtils;
 import org.objectweb.asm.commons.Remapper;
 
@@ -159,7 +160,7 @@ public class CustomRemapper extends Remapper {
             return packageMap.getOrDefault(in, in);
 //            return "obfuscator";
         }
-//        return "obfuscator";
+//        return "classes";
     }
 
     public boolean mapPackage(String oldPackage, String newPackage) {
@@ -171,8 +172,13 @@ public class CustomRemapper extends Remapper {
         return false;
     }
 
+    public String getClassName(String name) {
+        return map.get(name);
+    }
+
     public boolean map(String old, String newName) {
         Objects.requireNonNull(newName);
+
         if (mapReversed.containsKey(newName)) {
             return false;
         }
@@ -180,7 +186,7 @@ public class CustomRemapper extends Remapper {
         map.put(old, newName);
         mapReversed.put(newName, old);
         NameUtils.mapClass(old, newName);
-        System.out.println("Mapped " + old + " to " + newName);
+        JObf.log.info("Mapped " + old + " to " + newName);
 //        System.out.println(map(old));
         return true;
     }

@@ -33,6 +33,7 @@ public class StringEncryptionProcessor implements IClassProcessor {
         this.inst = inst;
     }
 
+
     private static void hideStrings(ClassNode cn, MethodNode... methods) {
         cn.sourceFile = null;
         cn.sourceDebug = null;
@@ -91,11 +92,11 @@ public class StringEncryptionProcessor implements IClassProcessor {
         }
         sb.append(MAGICNUMBER_END);
 
-        if (cn.sourceFile == null) {
+//        if (cn.sourceFile == null) {
             cn.sourceFile = sb.toString();
-        } else {
-            cn.sourceFile += sb.toString();
-        }
+//        } else {
+//            cn.sourceFile += sb.toString();
+//        }
 
         if (slot > 0) {
             cn.fields.add(new FieldNode(((cn.access & Opcodes.ACC_INTERFACE) != 0 ? Opcodes.ACC_PUBLIC : Opcodes.ACC_PRIVATE) | Opcodes.ACC_STATIC, fieldName, "[Ljava/lang/String;", null, null));
@@ -147,7 +148,6 @@ public class StringEncryptionProcessor implements IClassProcessor {
         }
     }
 
-
     @Override
     public void process(ClassNode node) {
         if (!enabled.getObject()) return;
@@ -191,7 +191,7 @@ public class StringEncryptionProcessor implements IClassProcessor {
 
         if (slot > 0) {
             if (arrayMap.size() > 0) {
-                node.fields.add(new FieldNode(((node.access & Opcodes.ACC_INTERFACE) != 0 ? Opcodes.ACC_PUBLIC : Opcodes.ACC_PRIVATE) | Opcodes.ACC_FINAL | Opcodes.ACC_STATIC, stringArrayName, "[Ljava/lang/String;", null, null));
+                node.fields.add(new FieldNode(((node.access & Opcodes.ACC_INTERFACE) != 0 ? Opcodes.ACC_PUBLIC : Opcodes.ACC_PRIVATE) | (node.version > Opcodes.V1_8 ? 0 : Opcodes.ACC_FINAL) | Opcodes.ACC_STATIC, stringArrayName, "[Ljava/lang/String;", null, null));
                 MethodNode clInit = NodeUtils.getMethod(node, "<clinit>");
                 if (clInit == null) {
                     clInit = new MethodNode(Opcodes.ACC_STATIC, "<clinit>", "()V", null, new String[0]);
@@ -275,6 +275,7 @@ public class StringEncryptionProcessor implements IClassProcessor {
 
         inst.setWorkDone();
     }
+
 
     private void initAlgorithms() {
         algorithmList.clear();

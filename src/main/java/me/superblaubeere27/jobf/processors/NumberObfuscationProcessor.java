@@ -231,7 +231,7 @@ public class NumberObfuscationProcessor implements IClassProcessor {
             }
         }
         if (i != 0) {
-            node.fields.add(new FieldNode(((node.access & Opcodes.ACC_INTERFACE) != 0 ? Opcodes.ACC_PUBLIC : Opcodes.ACC_PRIVATE) | Opcodes.ACC_FINAL | Opcodes.ACC_STATIC, fieldName, "[I", null, null));
+            node.fields.add(new FieldNode(((node.access & Opcodes.ACC_INTERFACE) != 0 ? Opcodes.ACC_PUBLIC : Opcodes.ACC_PRIVATE) | (node.version > Opcodes.V1_8 ? 0 : Opcodes.ACC_FINAL) | Opcodes.ACC_STATIC, fieldName, "[I", null, null));
             MethodNode clInit = NodeUtils.getMethod(node, "<clinit>");
             if (clInit == null) {
                 clInit = new MethodNode(Opcodes.ACC_STATIC, "<clinit>", "()V", null, new String[0]);

@@ -2,15 +2,13 @@ package me.superblaubeere27.jobf.processors.packager;
 
 import me.superblaubeere27.jobf.IClassProcessor;
 import me.superblaubeere27.jobf.JObfImpl;
-import me.superblaubeere27.jobf.util.values.DeprecationLevel;
-import me.superblaubeere27.jobf.util.values.EnabledValue;
-import me.superblaubeere27.jobf.util.values.ValueManager;
+import me.superblaubeere27.jobf.util.values.*;
 import me.superblaubeere27.jobf.utils.NameUtils;
 import me.superblaubeere27.jobf.utils.NodeUtils;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.ClassNode;
 
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.Random;
 
 import static org.objectweb.asm.Opcodes.T_BYTE;
@@ -23,6 +21,9 @@ public class Packager {
     private static final String PROCESSOR_NAME = "Packager";
     public static Packager INSTANCE = new Packager();
     private EnabledValue enabledValue = new EnabledValue(PROCESSOR_NAME, DeprecationLevel.OK, false);
+    private BooleanValue autoFindMainClass = new BooleanValue(PROCESSOR_NAME, "Use MainClass from the JAR manifest", DeprecationLevel.GOOD, true);
+    private StringValue mainClassValue = new StringValue(PROCESSOR_NAME, "Main class", DeprecationLevel.GOOD, "org.example.Main");
+    private String mainClass;
 
     private Packager() {
         ValueManager.registerClass(this);
@@ -43,6 +44,7 @@ public class Packager {
 
     public void init() {
         decryptorClassName = NameUtils.generateLocalVariableName();
+        mainClass = autoFindMainClass.getObject() ? JObfImpl.INSTANCE.getMainClass() : mainClassValue.getObject();
 //        DatatypeConverter.parseHexBinary();
 //        System.out.println(Arrays.toString(DatatypeConverter.parseHexBinary("A57BD48F77747419338AD9933A29A2D5")));
 //        System.out.println(Arrays.toString(HWID.hexStringToByteArray("A57BD48F77747419338AD9933A29A2D5")));
@@ -74,18 +76,14 @@ public class Packager {
     }
 
     public String encryptName(String name) {
-        try {
-            return new String(xor(name.replace("/", ".").getBytes("UTF-8"), key));
-        } catch (UnsupportedEncodingException e) {
-            throw new Error(e);
-        }
+        return new String(xor(name.replace("/", ".").getBytes(StandardCharsets.UTF_8), key));
     }
 
     public String getDecryptorClassName() {
         return decryptorClassName;
     }
 
-    public byte[] generateEncryptionClass(String mainClass, int mode) {
+    public byte[] generateEncryptionClass() {
         NameUtils.setup("", "", "", true);
 
         String keyFieldName = NameUtils.generateFieldName(decryptorClassName);

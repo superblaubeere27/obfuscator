@@ -36,6 +36,14 @@ public class Util {
         return null;
     }
 
+    public static String chooseDirectoryOrFile(final File currFolder, final Component parent) {
+        final JFileChooser chooser = new JFileChooser(currFolder);
+        chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+        if (chooser.showOpenDialog(parent) == JFileChooser.APPROVE_OPTION)
+            return chooser.getSelectedFile().getAbsolutePath();
+        return null;
+    }
+
     public static String chooseFile(final File currFolder, final Component parent) {
         final JFileChooser chooser = new JFileChooser(currFolder);
         if (chooser.showOpenDialog(parent) == JFileChooser.APPROVE_OPTION)
@@ -223,5 +231,14 @@ public class Util {
         if ((len = sb.length()) > 0)    /* trim trailing space */
             return sb.toString().substring(0, len - 1);
         return "";
+    }
+
+    public static boolean checkZip(String file) {
+        try {
+            new ZipFile(file).entries();
+        } catch (Throwable e) {
+            return false;
+        }
+        return true;
     }
 }

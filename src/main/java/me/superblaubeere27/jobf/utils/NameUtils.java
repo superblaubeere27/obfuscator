@@ -151,4 +151,12 @@ public class NameUtils {
             USED_FIELDNAMES.put(newName, USED_FIELDNAMES.get(old));
         }
     }
+
+    public static String getPackage(String in) {
+        int lin = in.lastIndexOf('/');
+
+        if (lin == 0) throw new IllegalArgumentException("Illegal class name");
+
+        return lin == -1 ? "" : in.substring(0, lin);
+    }
 }
