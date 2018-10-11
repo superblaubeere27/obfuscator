@@ -5,8 +5,10 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 
 import java.lang.reflect.Modifier;
+import java.util.Random;
 
 public class Utils {
+    private static final Random random = new Random();
 
     public static ClassNode lookupClass(String name) {
         ClassNode a = JObfImpl.INSTANCE.getClasspath().get(name);
@@ -57,9 +59,15 @@ public class Utils {
     }
 
     public static AbstractInsnNode getNext(AbstractInsnNode node) {
+        if (node == null) return null;
         AbstractInsnNode next = node.getNext();
+
+        if (next == null) return null;
+
         while (!Utils.isInstruction(next)) {
             next = next.getNext();
+
+            if (next == null) break;
         }
         return next;
     }
@@ -77,5 +85,9 @@ public class Utils {
             prev = prev.getPrevious();
         }
         return prev;
+    }
+
+    public static int random(int min, int max) {
+        return min >= max ? min : random.nextInt(max - min) + min;
     }
 }

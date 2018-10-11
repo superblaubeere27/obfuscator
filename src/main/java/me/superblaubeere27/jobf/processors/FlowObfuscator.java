@@ -36,6 +36,161 @@ public class FlowObfuscator implements IClassProcessor {
     }
 
 
+    public static InsnList generateIfGoto(int i, LabelNode label) {
+        InsnList insnList = new InsnList();
+
+        switch (i) {
+            case 0: {
+                int first;
+                int second;
+
+                do {
+                    first = random.nextInt(6) - 1;
+                    second = random.nextInt(6) - 1;
+                } while (second == first);
+
+                insnList.add(NodeUtils.generateIntPush(first));
+                insnList.add(NodeUtils.generateIntPush(second));
+                insnList.add(new JumpInsnNode(Opcodes.IF_ICMPNE, label));
+                break;
+            }
+            case 1: {
+                int first;
+                int second;
+
+                do {
+                    first = random.nextInt(6) - 1;
+                    second = random.nextInt(6) - 1;
+                } while (second != first);
+
+                insnList.add(NodeUtils.generateIntPush(first));
+                insnList.add(NodeUtils.generateIntPush(second));
+                insnList.add(new JumpInsnNode(Opcodes.IF_ICMPEQ, label));
+                break;
+            }
+            case 2: {
+                int first;
+                int second;
+
+                do {
+                    first = random.nextInt(6) - 1;
+                    second = random.nextInt(6) - 1;
+                } while (first >= second);
+
+                insnList.add(NodeUtils.generateIntPush(first));
+                insnList.add(NodeUtils.generateIntPush(second));
+                insnList.add(new JumpInsnNode(Opcodes.IF_ICMPLT, label));
+                break;
+            }
+            case 3: {
+                int first;
+                int second;
+
+                do {
+                    first = random.nextInt(6) - 1;
+                    second = random.nextInt(6) - 1;
+                } while (first < second);
+
+                insnList.add(NodeUtils.generateIntPush(first));
+                insnList.add(NodeUtils.generateIntPush(second));
+                insnList.add(new JumpInsnNode(Opcodes.IF_ICMPGE, label));
+                break;
+            }
+            case 4: {
+                int first;
+                int second;
+
+                do {
+                    first = random.nextInt(6) - 1;
+                    second = random.nextInt(6) - 1;
+                } while (first <= second);
+
+                insnList.add(NodeUtils.generateIntPush(first));
+                insnList.add(NodeUtils.generateIntPush(second));
+                insnList.add(new JumpInsnNode(Opcodes.IF_ICMPGT, label));
+                break;
+            }
+            case 5: {
+                int first;
+                int second;
+
+                do {
+                    first = random.nextInt(6) - 1;
+                    second = random.nextInt(6) - 1;
+                } while (first > second);
+
+                insnList.add(NodeUtils.generateIntPush(first));
+                insnList.add(NodeUtils.generateIntPush(second));
+                insnList.add(new JumpInsnNode(Opcodes.IF_ICMPLE, label));
+                break;
+            }
+            case 6: {
+                int first;
+
+                first = random.nextInt(5) + 1;
+
+                insnList.add(NodeUtils.generateIntPush(first));
+                insnList.add(new JumpInsnNode(Opcodes.IFNE, label));
+                break;
+            }
+            case 7: {
+                int first = 0;
+
+
+                insnList.add(NodeUtils.generateIntPush(first));
+                insnList.add(new JumpInsnNode(Opcodes.IFEQ, label));
+                break;
+            }
+            case 8: {
+                int second;
+
+                second = random.nextInt(5);
+
+                insnList.add(NodeUtils.generateIntPush(second));
+                insnList.add(new JumpInsnNode(Opcodes.IFGE, label));
+                break;
+            }
+            case 9: {
+                int second;
+
+                second = random.nextInt(5) + 1;
+
+                insnList.add(NodeUtils.generateIntPush(second));
+                insnList.add(new JumpInsnNode(Opcodes.IFGT, label));
+                break;
+            }
+            case 10: {
+                int second;
+
+                second = -random.nextInt(5);
+
+                insnList.add(NodeUtils.generateIntPush(second));
+                insnList.add(new JumpInsnNode(Opcodes.IFLE, label));
+                break;
+            }
+            case 11: {
+                int second;
+
+                second = -random.nextInt(5) - 1;
+
+                insnList.add(NodeUtils.generateIntPush(second));
+                insnList.add(new JumpInsnNode(Opcodes.IFLT, label));
+                break;
+            }
+            default: {
+                insnList.add(new InsnNode(Opcodes.ACONST_NULL));
+                insnList.add(new JumpInsnNode(Opcodes.IFNULL, label));
+                break;
+            }
+//            case 13: {
+//                insnList.add(NodeUtils.notNullPush());
+//                insnList.add(new JumpInsnNode(Opcodes.IFNONNULL, label));
+//                break;
+//            }
+        }
+        return insnList;
+    }
+
     @Override
     public void process(ClassNode node) {
         if (!enabled.getObject()) return;
@@ -45,6 +200,7 @@ public class FlowObfuscator implements IClassProcessor {
         for (MethodNode method : node.methods) {
             mangleSwitches(method);
             mangleReturn(method);
+            mangleNew(method);
 
             for (AbstractInsnNode abstractInsnNode : method.instructions.toArray()) {
                 if (badPop.getObject() && abstractInsnNode instanceof JumpInsnNode && abstractInsnNode.getOpcode() == Opcodes.GOTO) {
@@ -212,159 +368,28 @@ public class FlowObfuscator implements IClassProcessor {
         return insnList;
     }
 
-    public static InsnList generateIfGoto(int i, LabelNode label) {
-        InsnList insnList = new InsnList();
+    private void mangleNew(MethodNode node) {
+//        for (AbstractInsnNode abstractInsnNode : node.instructions.toArray()) {
+//            AbstractInsnNode next = Utils.getNext(abstractInsnNode);
+//
+//            if (abstractInsnNode instanceof TypeInsnNode && abstractInsnNode.getOpcode() == Opcodes.NEW && next != null && next.getOpcode() == Opcodes.DUP) {
+//                InsnList afterNew = new InsnList();
+//                afterNew.add(new InsnNode(Opcodes.DUP));
+//                afterNew.add(new LdcInsnNode(NameUtils.generateSpaceString(Utils.random(1, 3))));
+//                afterNew.add(new InsnNode(Opcodes.DUP_X2));
+//
+//                InsnList after = new InsnList();
+//                after.add(new InsnNode(Opcodes.SWAP));
+//                after.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/String", "toCharArray", "()[C", false));
+//                after.add(new InsnNode(Opcodes.POP));
+//
+//                node.instructions.insert(abstractInsnNode, afterNew);
+//                node.instructions.insert(next, afterNew);
+//                node.instructions.insert(next, new InsnNode(Opcodes.POP));
+//                node.instructions.remove(next);
+//            }
+//        }
 
-        switch (i) {
-            case 0: {
-                int first;
-                int second;
-
-                do {
-                    first = random.nextInt(6) - 1;
-                    second = random.nextInt(6) - 1;
-                } while (second == first);
-
-                insnList.add(NodeUtils.generateIntPush(first));
-                insnList.add(NodeUtils.generateIntPush(second));
-                insnList.add(new JumpInsnNode(Opcodes.IF_ICMPNE, label));
-                break;
-            }
-            case 1: {
-                int first;
-                int second;
-
-                do {
-                    first = random.nextInt(6) - 1;
-                    second = random.nextInt(6) - 1;
-                } while (second != first);
-
-                insnList.add(NodeUtils.generateIntPush(first));
-                insnList.add(NodeUtils.generateIntPush(second));
-                insnList.add(new JumpInsnNode(Opcodes.IF_ICMPEQ, label));
-                break;
-            }
-            case 2: {
-                int first;
-                int second;
-
-                do {
-                    first = random.nextInt(6) - 1;
-                    second = random.nextInt(6) - 1;
-                } while (first >= second);
-
-                insnList.add(NodeUtils.generateIntPush(first));
-                insnList.add(NodeUtils.generateIntPush(second));
-                insnList.add(new JumpInsnNode(Opcodes.IF_ICMPLT, label));
-                break;
-            }
-            case 3: {
-                int first;
-                int second;
-
-                do {
-                    first = random.nextInt(6) - 1;
-                    second = random.nextInt(6) - 1;
-                } while (first < second);
-
-                insnList.add(NodeUtils.generateIntPush(first));
-                insnList.add(NodeUtils.generateIntPush(second));
-                insnList.add(new JumpInsnNode(Opcodes.IF_ICMPGE, label));
-                break;
-            }
-            case 4: {
-                int first;
-                int second;
-
-                do {
-                    first = random.nextInt(6) - 1;
-                    second = random.nextInt(6) - 1;
-                } while (first <= second);
-
-                insnList.add(NodeUtils.generateIntPush(first));
-                insnList.add(NodeUtils.generateIntPush(second));
-                insnList.add(new JumpInsnNode(Opcodes.IF_ICMPGT, label));
-                break;
-            }
-            case 5: {
-                int first;
-                int second;
-
-                do {
-                    first = random.nextInt(6) - 1;
-                    second = random.nextInt(6) - 1;
-                } while (first > second);
-
-                insnList.add(NodeUtils.generateIntPush(first));
-                insnList.add(NodeUtils.generateIntPush(second));
-                insnList.add(new JumpInsnNode(Opcodes.IF_ICMPLE, label));
-                break;
-            }
-            case 6: {
-                int first;
-
-                first = random.nextInt(5) + 1;
-
-                insnList.add(NodeUtils.generateIntPush(first));
-                insnList.add(new JumpInsnNode(Opcodes.IFNE, label));
-                break;
-            }
-            case 7: {
-                int first = 0;
-
-
-                insnList.add(NodeUtils.generateIntPush(first));
-                insnList.add(new JumpInsnNode(Opcodes.IFEQ, label));
-                break;
-            }
-            case 8: {
-                int second;
-
-                second = random.nextInt(5);
-
-                insnList.add(NodeUtils.generateIntPush(second));
-                insnList.add(new JumpInsnNode(Opcodes.IFGE, label));
-                break;
-            }
-            case 9: {
-                int second;
-
-                second = random.nextInt(5) + 1;
-
-                insnList.add(NodeUtils.generateIntPush(second));
-                insnList.add(new JumpInsnNode(Opcodes.IFGT, label));
-                break;
-            }
-            case 10: {
-                int second;
-
-                second = -random.nextInt(5);
-
-                insnList.add(NodeUtils.generateIntPush(second));
-                insnList.add(new JumpInsnNode(Opcodes.IFLE, label));
-                break;
-            }
-            case 11: {
-                int second;
-
-                second = -random.nextInt(5) - 1;
-
-                insnList.add(NodeUtils.generateIntPush(second));
-                insnList.add(new JumpInsnNode(Opcodes.IFLT, label));
-                break;
-            }
-            case 12: {
-                insnList.add(new InsnNode(Opcodes.ACONST_NULL));
-                insnList.add(new JumpInsnNode(Opcodes.IFNULL, label));
-                break;
-            }
-            case 13: {
-                insnList.add(NodeUtils.notNullPush());
-                insnList.add(new JumpInsnNode(Opcodes.IFNONNULL, label));
-                break;
-            }
-        }
-        return insnList;
     }
 
     public static MethodNode ifWrapper(int opcode) {

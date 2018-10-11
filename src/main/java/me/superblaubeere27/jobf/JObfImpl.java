@@ -487,8 +487,13 @@ public class JObfImpl {
 
                         if (script == null || script.isObfuscatorEnabled(cn)) {
                             JObf.log.log(Level.INFO, String.format("(%s/%s), Processing %s", processed, classes.size(), entryName));
-                            for (IClassProcessor proc : processors)
-                                proc.process(cn);
+                            for (IClassProcessor proc : processors) {
+                                try {
+                                    proc.process(cn);
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            }
                         } else {
                             JObf.log.log(Level.INFO, String.format("(%s/%s), Skipping %s", processed, classes.size(), entryName));
                         }

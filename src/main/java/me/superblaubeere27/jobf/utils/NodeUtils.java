@@ -263,13 +263,15 @@ public class NodeUtils {
     }
 
     public static InsnList notNullPush() {
-        InsnList insns = new InsnList();
+        throw new RuntimeException("Not implemented");
+//        InsnList insns = new InsnList();
 
 //        insns.add(new LdcInsnNode(Math.random() * 100));
 //        insns.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Double", "valueOf", "(D)Ljava/lang/Double;", false));
 //        insns.add(new TypeInsnNode());
-        insns.add(new LdcInsnNode(Type.getType("Ljava/lang/System;")));
-        return insns;
+//        insns.add(new LdcInsnNode(Type.getType("Ljava/lang/System;")));
+//        insns.add(new FieldInsnNode(""));
+//        return insns;
     }
 
     public static InsnList debugString(String s) {
