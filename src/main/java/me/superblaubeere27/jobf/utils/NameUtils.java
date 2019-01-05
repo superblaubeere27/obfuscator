@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2017-2019 superblaubeere27, Sam Sun, MarcoMC
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 package me.superblaubeere27.jobf.utils;
 
 import me.superblaubeere27.jobf.util.Util;
@@ -7,30 +17,23 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-/**
- * Copyright © 2015 - 2017 | CCBlueX | All rights reserved.
- * <p>
- * Fume - By CCBlueX(Marco)
- */
 public class NameUtils {
-    private static HashMap<String, Integer> packageMap = new HashMap<>();
-    private static Map<String, HashMap<String, Integer>> USED_METHODNAMES = new HashMap<>();
-    private static Map<String, Integer> USED_FIELDNAMES = new HashMap<>();
-
-    //    private static boolean iL = true;
-    private static int localVars = Short.MAX_VALUE;
-
-    private static Random random = new Random();
-    private static int METHODS = 0;
-    private static int FIELDS = 0;
-
     /**
      * By ItzSomebody
      */
     private final static char[] DICT_SPACES = new char[]{
             '\u2000', '\u2001', '\u2002', '\u2003', '\u2004', '\u2005', '\u2006', '\u2007', '\u2008', '\u2009', '\u200A', '\u200B', '\u200C', '\u200D', '\u200E', '\u200F'
     };
+    private static HashMap<String, Integer> packageMap = new HashMap<>();
+    private static Map<String, HashMap<String, Integer>> USED_METHODNAMES = new HashMap<>();
+    private static Map<String, Integer> USED_FIELDNAMES = new HashMap<>();
+    //    private static boolean iL = true;
+    private static int localVars = Short.MAX_VALUE;
+    private static Random random = new Random();
+    private static int METHODS = 0;
+    private static int FIELDS = 0;
 
+    @SuppressWarnings("SameParameterValue")
     private static int randInt(int min, int max) {
         return random.nextInt(max - min) + min;
     }
@@ -62,6 +65,7 @@ public class NameUtils {
         packageMap.put(packageName, id + 1);
 
         return Util.toIl(id);
+//        return ClassNameGenerator.className(Utils.random(2, 5));
     }
 
     /**

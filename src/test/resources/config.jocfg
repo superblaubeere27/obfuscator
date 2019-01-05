@@ -1,0 +1,71 @@
+{
+  "Crasher": {
+    "Enabled": false
+  },
+  "InvokeDynamic": {
+    "Enabled": true
+  },
+  "HWIDPRotection": {
+    "Enabled": false
+  },
+  "LineNumberRemover": {
+    "Enabled": true,
+    "Rename local variables": true,
+    "Remove Line Numbers": true,
+    "Remove Debug Names": true,
+    "Add Local Variables": true,
+    "New SourceFile Name": ""
+  },
+  "StringEncryption": {
+    "Enabled": true,
+    "HideStrings": true,
+    "AES": false
+  },
+  "NumberObfuscation": {
+    "Enabled": true,
+    "Extract to Array": true,
+    "Obfuscate Zero": true,
+    "Shift": true,
+    "And": true,
+    "Multiple Instructions": true
+  },
+  "ReferenceProxy": {
+    "Enabled": false
+  },
+  "PeepholeOptimizer": {
+    "Enabled": false,
+    "Experimental Pop folding": false
+  },
+  "ShuffleMembers": {
+    "Enabled": true
+  },
+  "InnerClassRemover": {
+    "Enabled": true,
+    "Remap": false,
+    "Remove Metadata": true
+  },
+  "NameObfuscation": {
+    "Enabled": false
+  },
+  "Packager": {
+    "Enabled": false,
+    "Use MainClass from the JAR manifest": true,
+    "Main class": "org.example.Main"
+  },
+  "FlowObfuscator": {
+    "Enabled": true,
+    "Mangle Switches": true,
+    "Mangle Return": false,
+    "Replace GOTO": true,
+    "Replace If": true,
+    "Bad POP": true,
+    "Bad Concat": true,
+    "Mangle Local Variables": true
+  },
+  "HideMembers": {
+    "Enabled": true
+  },
+  "Inlining": {
+    "Enabled": false
+  }
+}

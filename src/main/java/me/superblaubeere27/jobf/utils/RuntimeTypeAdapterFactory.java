@@ -1,17 +1,11 @@
 /*
- * Copyright (C) 2011 Google Inc.
+ * Copyright (c) 2017-2019 superblaubeere27, Sam Sun, MarcoMC
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 package me.superblaubeere27.jobf.utils;
@@ -118,8 +112,8 @@ import java.util.Map;
 public final class RuntimeTypeAdapterFactory<T> implements TypeAdapterFactory {
     private final Class<?> baseType;
     private final String typeFieldName;
-    private final Map<String, Class<?>> labelToSubtype = new LinkedHashMap<String, Class<?>>();
-    private final Map<Class<?>, String> subtypeToLabel = new LinkedHashMap<Class<?>, String>();
+    private final Map<String, Class<?>> labelToSubtype = new LinkedHashMap<>();
+    private final Map<Class<?>, String> subtypeToLabel = new LinkedHashMap<>();
 
     private RuntimeTypeAdapterFactory(Class<?> baseType, String typeFieldName) {
         if (typeFieldName == null || baseType == null) {
@@ -134,7 +128,7 @@ public final class RuntimeTypeAdapterFactory<T> implements TypeAdapterFactory {
      * typeFieldName} as the type field name. Type field names are case sensitive.
      */
     public static <T> RuntimeTypeAdapterFactory<T> of(Class<T> baseType, String typeFieldName) {
-        return new RuntimeTypeAdapterFactory<T>(baseType, typeFieldName);
+        return new RuntimeTypeAdapterFactory<>(baseType, typeFieldName);
     }
 
     /**
@@ -142,7 +136,7 @@ public final class RuntimeTypeAdapterFactory<T> implements TypeAdapterFactory {
      * the type field name.
      */
     public static <T> RuntimeTypeAdapterFactory<T> of(Class<T> baseType) {
-        return new RuntimeTypeAdapterFactory<T>(baseType, "type");
+        return new RuntimeTypeAdapterFactory<>(baseType, "type");
     }
 
     /**
@@ -152,7 +146,7 @@ public final class RuntimeTypeAdapterFactory<T> implements TypeAdapterFactory {
      * @throws IllegalArgumentException if either {@code type} or {@code label}
      *                                  have already been registered on this type adapter.
      */
-    public RuntimeTypeAdapterFactory<T> registerSubtype(Class<? extends T> type, String label) {
+    private RuntimeTypeAdapterFactory<T> registerSubtype(Class<? extends T> type, String label) {
         if (type == null || label == null) {
             throw new NullPointerException();
         }
@@ -181,9 +175,9 @@ public final class RuntimeTypeAdapterFactory<T> implements TypeAdapterFactory {
         }
 
         final Map<String, TypeAdapter<?>> labelToDelegate
-                = new LinkedHashMap<String, TypeAdapter<?>>();
+                = new LinkedHashMap<>();
         final Map<Class<?>, TypeAdapter<?>> subtypeToDelegate
-                = new LinkedHashMap<Class<?>, TypeAdapter<?>>();
+                = new LinkedHashMap<>();
         for (Map.Entry<String, Class<?>> entry : labelToSubtype.entrySet()) {
             TypeAdapter<?> delegate = gson.getDelegateAdapter(this, TypeToken.get(entry.getValue()));
             labelToDelegate.put(entry.getKey(), delegate);

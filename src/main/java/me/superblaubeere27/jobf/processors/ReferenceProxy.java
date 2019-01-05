@@ -1,7 +1,18 @@
+/*
+ * Copyright (c) 2017-2019 superblaubeere27, Sam Sun, MarcoMC
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 package me.superblaubeere27.jobf.processors;
 
 import me.superblaubeere27.jobf.IClassProcessor;
 import me.superblaubeere27.jobf.JObfImpl;
+import me.superblaubeere27.jobf.ProcessorCallback;
 import me.superblaubeere27.jobf.util.values.DeprecationLevel;
 import me.superblaubeere27.jobf.util.values.EnabledValue;
 import me.superblaubeere27.jobf.utils.NameUtils;
@@ -20,10 +31,9 @@ import java.util.List;
 import java.util.Random;
 
 public class ReferenceProxy implements IClassProcessor {
+    private static final String PROCESSOR_NAME = "ReferenceProxy";
     private static Random random = new Random();
     private JObfImpl inst;
-    private static final String PROCESSOR_NAME = "ReferenceProxy";
-
     private EnabledValue enabled = new EnabledValue(PROCESSOR_NAME, DeprecationLevel.BAD, false);
 
     public ReferenceProxy(JObfImpl inst) {
@@ -31,7 +41,7 @@ public class ReferenceProxy implements IClassProcessor {
     }
 
     @Override
-    public void process(ClassNode node) {
+    public void process(ProcessorCallback callback, ClassNode node) {
         if (!enabled.getObject()) return;
 
         try {
@@ -74,22 +84,24 @@ public class ReferenceProxy implements IClassProcessor {
         }
     }
 
-    private MethodNode getProxyNode(ClassNode node, MethodInsnNode insnNode, boolean b) {
+    private MethodNode getProxyNode(ClassNode node, MethodInsnNode insnNode, boolean isVirtual) {
         String name = NameUtils.generateMethodName(node, insnNode.desc);
         MethodNode mv;
 
         Type[] argumentTypes = Type.getArgumentTypes(insnNode.desc);
         Type returnType = Type.getReturnType(insnNode.desc);
 
-        int slot1 = argumentTypes.length + (b ? 1 : 0);
-        int slot2 = argumentTypes.length + (b ? 1 : 0) + 1;
-        int slot3 = argumentTypes.length + (b ? 1 : 0) + 2;
-        int slot4 = argumentTypes.length + (b ? 1 : 0) + 3;
+        int offset = (isVirtual ? 1 : 0);
+
+        int slot1 = argumentTypes.length + offset;
+        int slot2 = argumentTypes.length + offset + 1;
+        int slot3 = argumentTypes.length + offset + 2;
+        int slot4 = argumentTypes.length + offset + 3;
 
 
         //MethodNode method = new MethodNode(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC, name, insnNode.desc, null, new String[0]);
         {
-            mv = new MethodNode(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, name, b ? "(Ljava/lang/Object;" + insnNode.desc.substring(1) : insnNode.desc, null, null);
+            mv = new MethodNode(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, name, isVirtual ? "(Ljava/lang/Object;" + insnNode.desc.substring(1) : insnNode.desc, null, null);
 
 
             mv.visitCode();
@@ -149,7 +161,7 @@ public class ReferenceProxy implements IClassProcessor {
 //            mv.visitLineNumber(18, l6);
             mv.visitVarInsn(Opcodes.ALOAD, slot1);
 
-            if (!b) mv.visitInsn(Opcodes.ACONST_NULL);
+            if (!isVirtual) mv.visitInsn(Opcodes.ACONST_NULL);
             else mv.visitVarInsn(Opcodes.ALOAD, 0);
 
             mv.visitVarInsn(Opcodes.ALOAD, slot2);

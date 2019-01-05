@@ -1,12 +1,22 @@
+/*
+ * Copyright (c) 2017-2019 superblaubeere27, Sam Sun, MarcoMC
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 package me.superblaubeere27;
 
 import com.google.common.io.Files;
 import me.superblaubeere27.jobf.JObfImpl;
-import me.superblaubeere27.jobf.processors.FlowObfuscator;
+import me.superblaubeere27.jobf.processors.flowObfuscation.FlowObfuscator;
 import org.junit.Before;
 import org.junit.Test;
-import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
+import org.objectweb.asm.ModifiedClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 
@@ -16,7 +26,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 public class JumpTest {
-    private Class generatedClass = null;
+    private Class<?> generatedClass = null;
 
     @Before
     public void generateClass() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, ClassNotFoundException, IOException {
@@ -53,7 +63,7 @@ public class JumpTest {
 
         classNode.methods.add(methodNode);
 
-        ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+        ModifiedClassWriter writer = new ModifiedClassWriter(ModifiedClassWriter.COMPUTE_FRAMES);
 
         classNode.accept(writer);
 

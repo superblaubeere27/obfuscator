@@ -1,314 +1,283 @@
+/*
+ * Copyright (c) 2017-2019 superblaubeere27, Sam Sun, MarcoMC
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 package me.superblaubeere27.jobf.processors.name;
 
+import me.superblaubeere27.jobf.JObf;
 import me.superblaubeere27.jobf.JObfImpl;
 import me.superblaubeere27.jobf.util.values.DeprecationLevel;
 import me.superblaubeere27.jobf.util.values.EnabledValue;
 import me.superblaubeere27.jobf.utils.ClassTree;
 import me.superblaubeere27.jobf.utils.NameUtils;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.ClassRemapper;
+import org.objectweb.asm.commons.Remapper;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.lang.reflect.Modifier;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class NameObfuscation implements INameObfuscationProcessor {
     private static String PROCESSOR_NAME = "NameObfuscation";
 
     private EnabledValue enabled = new EnabledValue(PROCESSOR_NAME, DeprecationLevel.OK, false);
 
+    private String repackageName = "obfuscator";
+    private boolean repackage = false;
+
+    private void putMapping(HashMap<String, String> mappings, String str, String str1) {
+        mappings.put(str, str1);
+    }
+
     @Override
     public void transformPost(JObfImpl inst, HashMap<String, ClassNode> nodes) {
         if (!enabled.getObject()) return;
+        HashMap<String, String> mappings = new HashMap<>();
+
+        mappings.clear();
+
+        List<ClassWrapper> classWrappers = new ArrayList<>();
+
+
+        System.out.println("Building Hierarchy");
+
+        for (ClassNode value : nodes.values()) {
+            ClassWrapper cw = new ClassWrapper(value, false, new byte[0]);
+
+            classWrappers.add(cw);
+
+            JObfImpl.INSTANCE.buildHierarchy(cw, null);
+        }
+        System.out.println("Finished building hierarchy");
+
+        long current = System.currentTimeMillis();
+        JObf.log.info("Generating mappings...");
 
         NameUtils.setup("", "", "", true);
 
-        final List<ClassNode> classNodes = new ArrayList<>(JObfImpl.classes.values());
+        AtomicInteger classCounter = new AtomicInteger();
 
-        final Map<String, ClassNode> updatedClasses = new HashMap<>();
-        final CustomRemapper remapper = new CustomRemapper();
+        classWrappers.forEach(classWrapper -> {
+            boolean excluded = this.excluded(classWrapper);
 
-        for (final ClassNode classNode : classNodes) {
-            if (!inst.script.remapClass(classNode)) continue;
+            for (MethodWrapper method : classWrapper.methods) {
+                method.methodNode.access &= ~Opcodes.ACC_PRIVATE;
+                method.methodNode.access &= ~Opcodes.ACC_PROTECTED;
+                method.methodNode.access |= Opcodes.ACC_PUBLIC;
+            }
+            for (FieldWrapper fieldWrapper : classWrapper.fields) {
+                fieldWrapper.fieldNode.access &= ~Opcodes.ACC_PRIVATE;
+                fieldWrapper.fieldNode.access &= ~Opcodes.ACC_PROTECTED;
+                fieldWrapper.fieldNode.access |= Opcodes.ACC_PUBLIC;
+            }
+            if (excluded) return;
 
-            String mappedName;
+            classWrapper.methods.stream().filter(methodWrapper -> !Modifier.isNative(methodWrapper.methodNode.access)
+                    && !methodWrapper.methodNode.name.equals("main") && !methodWrapper.methodNode.name.equals("premain")
+                    && !methodWrapper.methodNode.name.startsWith("<")).forEach(methodWrapper -> {
+//                        if (!excluded) {
 
-            do {
-                mappedName = NameUtils.generateClassName();
-            } while (!remapper.map(classNode.name, mappedName));
+//                        }
+                if (canRenameMethodTree(mappings, new HashSet<>(), methodWrapper, classWrapper.originalName)) {
+                    this.renameMethodTree(mappings, new HashSet<>(), methodWrapper, classWrapper.originalName, NameUtils.generateMethodName(classWrapper.originalName, methodWrapper.originalDescription));
+                }
+            });
 
-            Set<String> allClasses = new HashSet<>();
-            ClassTree tree = inst.getClassTree(classNode.name);
-            Set<String> tried = new HashSet<>();
-            LinkedList<String> toTry = new LinkedList<>();
-            toTry.add(tree.thisClass);
+            classWrapper.fields.forEach(fieldWrapper -> {
+//                if (!excluded) {
+//                }
+                if (canRenameFieldTree(mappings, new HashSet<>(), fieldWrapper, classWrapper.originalName)) {
+                    this.renameFieldTree(new HashSet<>(), fieldWrapper, classWrapper.originalName, NameUtils.generateFieldName(classWrapper.originalName), mappings);
+                }
+            });
+            classWrapper.classNode.access &= ~Opcodes.ACC_PRIVATE;
+            classWrapper.classNode.access &= ~Opcodes.ACC_PROTECTED;
+            classWrapper.classNode.access |= Opcodes.ACC_PUBLIC;
 
-            while (!toTry.isEmpty()) {
-                String t = toTry.poll();
-                if (tried.add(t) && !t.equals("java/lang/Object")) {
-                    ClassTree ct = inst.getClassTree(t);
-                    allClasses.add(t);
-                    allClasses.addAll(ct.parentClasses);
-                    allClasses.addAll(ct.subClasses);
-                    toTry.addAll(ct.parentClasses);
-                    toTry.addAll(ct.subClasses);
+            putMapping(mappings, classWrapper.originalName, (repackage)
+                    ? repackageName + '/' + NameUtils.generateClassName() : NameUtils.generateClassName());
+            classCounter.incrementAndGet();
+        });
+
+        try {
+            FileOutputStream outStream = new FileOutputStream("mappings.txt");
+            PrintStream printStream = new PrintStream(outStream);
+
+            for (Map.Entry<String, String> stringStringEntry : mappings.entrySet()) {
+                printStream.println(stringStringEntry.getKey() + " -> " + stringStringEntry.getValue());
+            }
+
+            outStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+        JObf.log.info(String.format("Finished generating mappings (%dms)", (System.currentTimeMillis() - current)));
+        JObf.log.info("Applying mappings...");
+
+        current = System.currentTimeMillis();
+
+        Remapper simpleRemapper = new MemberRemapper(mappings);
+
+        for (ClassWrapper classWrapper : classWrappers) {
+            ClassNode classNode = classWrapper.classNode;
+
+            ClassNode copy = new ClassNode();
+            classNode.accept(new ClassRemapper(copy, simpleRemapper));
+            for (int i = 0; i < copy.methods.size(); i++) {
+                classWrapper.methods.get(i).methodNode = copy.methods.get(i);
+
+                /*for (AbstractInsnNode insn : methodNode.instructions.toArray()) { // TODO: Fix lambdas + interface
+                    if (insn instanceof InvokeDynamicInsnNode) {
+                        InvokeDynamicInsnNode indy = (InvokeDynamicInsnNode) insn;
+                        if (indy.bsm.getOwner().equals("java/lang/invoke/LambdaMetafactory")) {
+                            Handle handle = (Handle) indy.bsmArgs[1];
+                            String newName = mappings.get(handle.getOwner() + '.' + handle.getName() + handle.getDesc());
+                            if (newName != null) {
+                                indy.name = newName;
+                                indy.bsm = new Handle(handle.getTag(), handle.getOwner(), newName, handle.getDesc(), false);
+                            }
+                        }
+                    }
+                }*/
+            }
+
+            if (copy.fields != null) {
+                for (int i = 0; i < copy.fields.size(); i++) {
+                    classWrapper.fields.get(i).fieldNode = copy.fields.get(i);
                 }
             }
-            for (FieldNode fieldNode : classNode.fields) {
-                List<String> references = new ArrayList<>();
-                for (String possibleClass : allClasses) {
-                    ClassNode otherNode = inst.assureLoaded(possibleClass);
-                    boolean found = false;
-                    for (FieldNode otherField : otherNode.fields) {
-                        if (otherField.name.equals(fieldNode.name) && otherField.desc.equals(fieldNode.desc)) {
-                            found = true;
-                        }
-                    }
-                    if (!found) {
-                        references.add(possibleClass);
-                    }
-                }
-                if (!remapper.fieldMappingExists(classNode.name, fieldNode.name, fieldNode.desc)) {
-                    while (true) {
-//                        String newName = "Field" + integer.getAndIncrement();
-                        String newName = NameUtils.generateFieldName(classNode.name);
-                        if (remapper.mapFieldName(classNode.name, fieldNode.name, fieldNode.desc, newName, false)) {
-                            for (String s : references) {
-                                remapper.mapFieldName(s, fieldNode.name, fieldNode.desc, newName, true);
-                            }
-                            break;
-                        }
+
+            classWrapper.classNode = copy;
+            JObfImpl.classes.remove(classWrapper.originalName + ".class");
+            JObfImpl.classes.put(classWrapper.classNode.name + ".class", classWrapper.classNode);
+//            JObfImpl.INSTANCE.getClassPath().put();
+//            this.getClasses().put(classWrapper.classNode.name, classWrapper);
+            JObfImpl.INSTANCE.getClassPath().put(classWrapper.classNode.name, classWrapper);
+        }
+        JObf.log.info(String.format("Finished applying mappings (%dms)", (System.currentTimeMillis() - current)));
+    }
+
+    private boolean excluded(ClassWrapper classWrapper) {
+        boolean b = !JObfImpl.INSTANCE.script.remapClass(classWrapper.classNode);
+        System.out.println(classWrapper.originalName + "/ " + b);
+        return b;
+    }
+
+    private boolean excluded(String s) {
+        // TODO Check excluded
+        return false;
+    }
+
+
+    private boolean canRenameMethodTree(HashMap<String, String> mappings, HashSet<ClassTree> visited, MethodWrapper methodWrapper, String owner) {
+        ClassTree tree = JObfImpl.INSTANCE.getTree(owner);
+        if (!visited.contains(tree)) {
+            visited.add(tree);
+            if (excluded(owner + '.' + methodWrapper.originalName + methodWrapper.originalDescription)) {
+                return false;
+            }
+            if (mappings.containsKey(owner + '.' + methodWrapper.originalName + methodWrapper.originalDescription)) {
+                return true;
+            }
+            if (!methodWrapper.owner.originalName.equals(owner) && tree.classWrapper.libraryNode) {
+                for (MethodNode mn : tree.classWrapper.classNode.methods) {
+                    if (mn.name.equals(methodWrapper.originalName)
+                            & mn.desc.equals(methodWrapper.originalDescription)) {
+                        return false;
                     }
                 }
             }
-            while (!toTry.isEmpty()) {
-                String t = toTry.poll();
-                if (tried.add(t) && !t.equals("java/lang/Object")) {
-                    ClassNode cn = inst.assureLoaded(t);
-                    ClassTree ct = inst.getClassTree(t);
-                    allClasses.add(t);
-                    allClasses.addAll(ct.parentClasses);
-                    toTry.addAll(ct.parentClasses);
-                    allClasses.addAll(ct.subClasses);
-                    toTry.addAll(ct.subClasses);
+            for (String parent : tree.parentClasses) {
+                if (parent != null && !canRenameMethodTree(mappings, visited, methodWrapper, parent)) {
+                    return false;
                 }
             }
-            allClasses.remove(tree.thisClass);
-
-            for (MethodNode methodNode : new ArrayList<>(classNode.methods)) {
-                if (methodNode.name.startsWith("<"))
-                    continue;
-                if (methodNode.name.equals("main"))
-                    continue;
-                if ((methodNode.access & Opcodes.ACC_ABSTRACT) != 0)
-                    continue;
-                if ((methodNode.access & Opcodes.ACC_NATIVE) != 0)
-                    continue;
-                if ((classNode.access & Opcodes.ACC_INTERFACE) != 0)
-                    continue;
-
-                final Map<Map.Entry<ClassNode, MethodNode>, Boolean> allMethodNodes = new HashMap<>();
-                final Type methodType = Type.getReturnType(methodNode.desc);
-                final AtomicBoolean isLibrary = new AtomicBoolean(false);
-                if (methodType.getSort() != Type.OBJECT && methodType.getSort() != Type.ARRAY) {
-                    if (methodType.getSort() == Type.METHOD) {
-                        throw new IllegalArgumentException("Did not expect method");
-                    }
-                    allClasses.stream().map(inst::assureLoaded).forEach(node -> {
-                        boolean foundSimilar = false;
-                        boolean equals = false;
-                        MethodNode equalsMethod = null;
-                        for (MethodNode method : node.methods) {
-                            Type thisType = Type.getMethodType(methodNode.desc);
-                            Type otherType = Type.getMethodType(method.desc);
-                            if (methodNode.name.equals(method.name) && Arrays.equals(thisType.getArgumentTypes(), otherType.getArgumentTypes())) {
-                                foundSimilar = true;
-                                if (thisType.getReturnType().getSort() == otherType.getReturnType().getSort()) {
-                                    equals = true;
-                                    equalsMethod = method;
-                                }
-                            }
-                        }
-                        if (foundSimilar) {
-                            if (equals) {
-                                allMethodNodes.put(new AbstractMap.SimpleEntry<>(node, equalsMethod), true);
-                            }
-                        } else {
-                            allMethodNodes.put(new AbstractMap.SimpleEntry<>(node, methodNode), false);
-                        }
-                    });
-                } else if (methodType.getSort() == Type.ARRAY) {
-                    Type elementType = methodType.getElementType();
-                    if (elementType.getSort() == Type.OBJECT) {
-                        String parent = elementType.getInternalName();
-                        allClasses.stream().map(name -> inst.assureLoaded(name)).forEach(node -> {
-                            boolean foundSimilar = false;
-                            boolean equals = false;
-                            MethodNode equalsMethod = null;
-                            for (MethodNode method : node.methods) {
-                                Type thisType = Type.getMethodType(methodNode.desc);
-                                Type otherType = Type.getMethodType(method.desc);
-                                if (methodNode.name.equals(method.name) && Arrays.equals(thisType.getArgumentTypes(), otherType.getArgumentTypes())) {
-                                    if (otherType.getReturnType().getSort() == Type.OBJECT) {
-                                        foundSimilar = true;
-                                        String child = otherType.getReturnType().getInternalName();
-                                        inst.assureLoaded(parent);
-                                        inst.assureLoaded(child);
-                                        if (inst.isSubclass(parent, child) || inst.isSubclass(child, parent)) {
-                                            equals = true;
-                                            equalsMethod = method;
-                                        }
-                                    }
-                                }
-                            }
-                            if (foundSimilar) {
-                                if (equals) {
-                                    allMethodNodes.put(new AbstractMap.SimpleEntry<>(node, equalsMethod), true);
-                                }
-                            } else {
-                                allMethodNodes.put(new AbstractMap.SimpleEntry<>(node, methodNode), false);
-                            }
-                        });
-                    } else {
-                        allClasses.stream().map(name -> inst.assureLoaded(name)).forEach(node -> {
-                            boolean foundSimilar = false;
-                            boolean equals = false;
-                            MethodNode equalsMethod = null;
-                            for (MethodNode method : node.methods) {
-                                Type thisType = Type.getMethodType(methodNode.desc);
-                                Type otherType = Type.getMethodType(method.desc);
-                                if (methodNode.name.equals(method.name) && Arrays.equals(thisType.getArgumentTypes(), otherType.getArgumentTypes())) {
-                                    foundSimilar = true;
-                                    if (thisType.getReturnType().getSort() == otherType.getReturnType().getSort()) {
-                                        equals = true;
-                                        equalsMethod = method;
-                                    }
-                                }
-                            }
-                            if (foundSimilar) {
-                                if (equals) {
-                                    allMethodNodes.put(new AbstractMap.SimpleEntry<>(node, equalsMethod), true);
-                                }
-                            } else {
-                                allMethodNodes.put(new AbstractMap.SimpleEntry<>(node, methodNode), false);
-                            }
-                        });
-                    }
-                } else if (methodType.getSort() == Type.OBJECT) {
-                    String parent = methodType.getInternalName();
-                    allClasses.stream().map(name -> inst.assureLoaded(name)).forEach(node -> {
-                        boolean foundSimilar = false;
-                        boolean equals = false;
-                        MethodNode equalsMethod = null;
-                        for (MethodNode method : node.methods) {
-                            Type thisType = Type.getMethodType(methodNode.desc);
-                            Type otherType = Type.getMethodType(method.desc);
-                            if (methodNode.name.equals(method.name) && Arrays.equals(thisType.getArgumentTypes(), otherType.getArgumentTypes())) {
-                                if (otherType.getReturnType().getSort() == Type.OBJECT) {
-                                    foundSimilar = true;
-                                    String child = otherType.getReturnType().getInternalName();
-                                    inst.assureLoaded(parent);
-                                    inst.assureLoaded(child);
-                                    if (inst.isSubclass(parent, child) || inst.isSubclass(child, parent)) {
-                                        equals = true;
-                                        equalsMethod = method;
-                                    }
-                                }
-                            }
-                        }
-                        if (foundSimilar) {
-                            if (equals) {
-                                allMethodNodes.put(new AbstractMap.SimpleEntry<>(node, equalsMethod), true);
-                            } else {
-                                allMethodNodes.put(new AbstractMap.SimpleEntry<>(node, methodNode), false);
-                            }
-                        } else {
-                            allMethodNodes.put(new AbstractMap.SimpleEntry<>(node, methodNode), false);
-                        }
-                    });
-                }
-
-                allMethodNodes.forEach((key, value) -> {
-                    if (inst.isLibrary(key.getKey()) && value) {
-                        isLibrary.set(true);
-                    }
-                });
-
-                if (!isLibrary.get()) {
-                    if (!remapper.methodMappingExists(classNode.name, methodNode.name, methodNode.desc)) {
-                        while (true) {
-                            String name = NameUtils.generateMethodName(classNode, methodNode.desc);
-
-                            if (remapper.mapMethodName(classNode.name, methodNode.name, methodNode.desc, name, false)) {
-                                allMethodNodes.keySet().forEach(ent -> remapper.mapMethodName(ent.getKey().name, ent.getValue().name, ent.getValue().desc, name, true));
-                                break;
-                            }
-                        }
-                    }
+            for (String sub : tree.subClasses) {
+                if (sub != null && !canRenameMethodTree(mappings, visited, methodWrapper, sub)) {
+                    return false;
                 }
             }
         }
 
-        for (final ClassNode classNode : classNodes) {
-            JObfImpl.classes.remove(classNode.name + ".class");
+        return true;
+    }
 
-            ClassNode newNode = new ClassNode();
-            ClassRemapper classRemapper = new ClassRemapper(newNode, remapper);
-            classNode.accept(classRemapper);
+    private void renameMethodTree(HashMap<String, String> mappings, HashSet<ClassTree> visited, MethodWrapper MethodWrapper, String className,
+                                  String newName) {
+        ClassTree tree = JObfImpl.INSTANCE.getTree(className);
 
-//            if (!classNode.name.equals(newNode.name))
-//                Fume.fume.obfuscator.classTransforms.put(classNode.name, newNode.name);
-
-            updatedClasses.put(newNode.name + ".class", newNode);
-        }
-
-        updatedClasses.forEach((s, classNode) -> JObfImpl.classes.put(s, classNode));
-
-        if (inst.getMainClass() != null && inst.getMainClass().isEmpty()) {
-            String newMainClass = remapper.getClassName(inst.getMainClass().replace('.', '/'));
-
-            if (newMainClass != null) {
-                inst.setMainClass(newMainClass);
-
-                System.out.println("New Main-class: " + newMainClass);
+        if (!tree.classWrapper.libraryNode && !visited.contains(tree)) {
+            putMapping(mappings, className + '.' + MethodWrapper.originalName + MethodWrapper.originalDescription, newName);
+            visited.add(tree);
+            for (String parentClass : tree.parentClasses) {
+                this.renameMethodTree(mappings, visited, MethodWrapper, parentClass, newName);
+            }
+            for (String subClass : tree.subClasses) {
+                this.renameMethodTree(mappings, visited, MethodWrapper, subClass, newName);
             }
         }
     }
 
-//    @Override
-//    public void processEntry(Callback<String> entryNameCallback, Callback<byte[]> data) {
-//        final byte[] entryData = data.getObject();
-//        final String entryName = entryNameCallback.getObject();
-//
-//        if(entryName.equals("META-INF/MANIFEST.MF")) {
-//            final String s = new String(entryData);
-//            final StringBuilder stringBuilder = new StringBuilder();
-//
-//            for(final String line : s.split("\n")) {
-//                if(line.startsWith("Main-Class: ")) {
-//                    final String oldClass = line.replace("Main-Class: ", "").replace("\r", "").replace('.', '/');
-//
-//                    if(Fume.fume.obfuscator.classTransforms.containsKey(oldClass))
-//                        stringBuilder.append("Main-Class: ").append(Fume.fume.obfuscator.classTransforms.get(oldClass.replace('.', '/')).replace('/', '.')).append("\n");
-//                    else
-//                        stringBuilder.append(line);
-//                    continue;
-//                }
-//
-//                stringBuilder.append(line).append("\n");
-//            }
-//
-//            try{
-//                data.setObject(stringBuilder.toString().getBytes("UTF-8"));
-//            }catch(UnsupportedEncodingException e) {
-//                e.printStackTrace();
-//            }
-//        }
-//
-//    }
+    private boolean canRenameFieldTree(HashMap<String, String> mappings, HashSet<ClassTree> visited, FieldWrapper fieldWrapper, String owner) {
+        ClassTree tree = JObfImpl.INSTANCE.getTree(owner);
+        if (!visited.contains(tree)) {
+            visited.add(tree);
+            if (excluded(owner + '.' + fieldWrapper.originalName + '.' + fieldWrapper.originalDescription)) {
+                return false;
+            }
+            if (mappings.containsKey(owner + '.' + fieldWrapper.originalName + '.' + fieldWrapper.originalDescription))
+                return true;
+            if (!fieldWrapper.owner.originalName.equals(owner) && tree.classWrapper.libraryNode) {
+                for (FieldNode fn : tree.classWrapper.classNode.fields) {
+                    if (fieldWrapper.originalName.equals(fn.name) && fieldWrapper.originalDescription.equals(fn.desc)) {
+                        return false;
+                    }
+                }
+            }
+            for (String parent : tree.parentClasses) {
+                if (parent != null && !canRenameFieldTree(mappings, visited, fieldWrapper, parent)) {
+                    return false;
+                }
+            }
+            for (String sub : tree.subClasses) {
+                if (sub != null && !canRenameFieldTree(mappings, visited, fieldWrapper, sub)) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private void renameFieldTree(HashSet<ClassTree> visited, FieldWrapper fieldWrapper, String owner, String newName, HashMap<String, String> mappings) {
+        ClassTree tree = JObfImpl.INSTANCE.getTree(owner);
+
+        if (!tree.classWrapper.libraryNode && !visited.contains(tree)) {
+            putMapping(mappings, owner + '.' + fieldWrapper.originalName + '.' + fieldWrapper.originalDescription, newName);
+            visited.add(tree);
+            for (String parentClass : tree.parentClasses) {
+                this.renameFieldTree(visited, fieldWrapper, parentClass, newName, mappings);
+            }
+            for (String subClass : tree.subClasses) {
+                this.renameFieldTree(visited, fieldWrapper, subClass, newName, mappings);
+            }
+        }
+    }
 
 //    @Override
 //    public void processClass(final ClassNode classNode) {

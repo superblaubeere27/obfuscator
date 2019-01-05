@@ -1,6 +1,15 @@
+/*
+ * Copyright (c) 2017-2019 superblaubeere27, Sam Sun, MarcoMC
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 package me.superblaubeere27.jobf.utils;
 
-import me.superblaubeere27.jobf.JObfImpl;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
@@ -31,8 +40,7 @@ public class InliningUtils {
         argumentTypes.addAll(Arrays.asList(Type.getArgumentTypes(node.desc)));
 
         for (int i = 0; i < argumentTypes.size(); i++) {
-            int pos = i;
-            slotMap.put(pos, provider.allocateVar());
+            slotMap.put(i, provider.allocateVar());
         }
 
         // Search for labels and replace them
@@ -157,8 +165,8 @@ public class InliningUtils {
     }
 
 
-    public static boolean canAccessField(ClassNode from, FieldNode method, ClassNode node, FieldNode thing) {
-        if (!canAccess(from, node)) return false;
+    private static boolean canAccessField(ClassNode from, FieldNode method, ClassNode node, FieldNode thing) {
+        if (cantAccess(from, node)) return false;
 
         if (Modifier.isPublic(thing.access)) {
             return true;
@@ -167,14 +175,14 @@ public class InliningUtils {
             return isInnerClass(node, from);
         }
         if (Modifier.isProtected(thing.access)) {
-            return JObfImpl.INSTANCE.isSubclass(node.name, from.name);
+            return false;
         }
 
         return NameUtils.getPackage(from.name).equals(NameUtils.getPackage(node.name));
     }
 
-    public static boolean canAccessMethod(ClassNode from, MethodNode method, ClassNode node, MethodNode thing) {
-        if (!canAccess(from, node)) return false;
+    private static boolean canAccessMethod(ClassNode from, MethodNode method, ClassNode node, MethodNode thing) {
+        if (cantAccess(from, node)) return false;
 
 
         if (Modifier.isPublic(thing.access)) {
@@ -190,20 +198,20 @@ public class InliningUtils {
         return NameUtils.getPackage(from.name).equals(NameUtils.getPackage(node.name));
     }
 
-    public static boolean canAccess(ClassNode from, ClassNode node) {
+    private static boolean cantAccess(ClassNode from, ClassNode node) {
         if (ANONYM_CLASSES.matcher(from.name).matches() || ANONYM_CLASSES.matcher(node.name).matches()) { // Is
-            return false;
-        }
-        if (Modifier.isPublic(node.access)) {
             return true;
         }
+        if (Modifier.isPublic(node.access)) {
+            return false;
+        }
         if (Modifier.isPrivate(node.access)) {
-            return isInnerClass(node, from);
+            return !isInnerClass(node, from);
         }
         if (Modifier.isProtected(node.access)) {
-            return JObfImpl.INSTANCE.isSubclass(node.name, from.name);
+            return true;
         }
-        return NameUtils.getPackage(from.name).equals(NameUtils.getPackage(node.name));
+        return !NameUtils.getPackage(from.name).equals(NameUtils.getPackage(node.name));
     }
 
     private static boolean isInnerClass(ClassNode node, ClassNode of) {

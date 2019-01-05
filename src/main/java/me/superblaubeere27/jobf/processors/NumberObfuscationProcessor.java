@@ -1,7 +1,18 @@
+/*
+ * Copyright (c) 2017-2019 superblaubeere27, Sam Sun, MarcoMC
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 package me.superblaubeere27.jobf.processors;
 
 import me.superblaubeere27.jobf.IClassProcessor;
 import me.superblaubeere27.jobf.JObfImpl;
+import me.superblaubeere27.jobf.ProcessorCallback;
 import me.superblaubeere27.jobf.util.values.BooleanValue;
 import me.superblaubeere27.jobf.util.values.DeprecationLevel;
 import me.superblaubeere27.jobf.util.values.EnabledValue;
@@ -16,31 +27,27 @@ import java.util.List;
 import java.util.Random;
 
 public class NumberObfuscationProcessor implements IClassProcessor {
-    private static Random random = new Random();
-    private JObfImpl inst;
     private static final String PROCESSOR_NAME = "NumberObfuscation";
-
-    private static boolean lenghtMode = true;
-    private static boolean xorMode = true;
-    private static boolean simpleMathMode = true;
+    private static Random random = new Random();
     private static NumberObfuscationProcessor INSTANCE;
+    private JObfImpl inst;
     private EnabledValue enabled = new EnabledValue(PROCESSOR_NAME, DeprecationLevel.GOOD, true);
-    private BooleanValue extractToArray = new BooleanValue(PROCESSOR_NAME, "Extract to Array", DeprecationLevel.GOOD, true);
-    private BooleanValue obfuscateZero = new BooleanValue(PROCESSOR_NAME, "Obfuscate Zero", DeprecationLevel.GOOD, true);
-    private BooleanValue shift = new BooleanValue(PROCESSOR_NAME, "Shift", DeprecationLevel.OK, false);
-    private BooleanValue and = new BooleanValue(PROCESSOR_NAME, "And", DeprecationLevel.OK, false);
-    private BooleanValue multipleInstrucstions = new BooleanValue(PROCESSOR_NAME, "Multiple Instructions", DeprecationLevel.GOOD, true);
+    private BooleanValue extractToArray = new BooleanValue(PROCESSOR_NAME, "Extract to Array", "Calculates the integers once and store them in an array", DeprecationLevel.GOOD, true);
+    private BooleanValue obfuscateZero = new BooleanValue(PROCESSOR_NAME, "Obfuscate Zero", "Enables special obfuscation of the number 0", DeprecationLevel.GOOD, true);
+    private BooleanValue shift = new BooleanValue(PROCESSOR_NAME, "Shift", "Uses \"<<\" to obfuscate numbers", DeprecationLevel.GOOD, false);
+    private BooleanValue and = new BooleanValue(PROCESSOR_NAME, "And", "Uses \"&\" to obfuscate numbers", DeprecationLevel.GOOD, false);
+    private BooleanValue multipleInstructions = new BooleanValue(PROCESSOR_NAME, "Multiple Instructions", "Repeats the obfuscation process", DeprecationLevel.GOOD, true);
 
     public NumberObfuscationProcessor(JObfImpl inst) {
         this.inst = inst;
         INSTANCE = this;
     }
 
-    public static InsnList getInstructionsMultipleTimes(int value, int iterations) {
+    private static InsnList getInstructionsMultipleTimes(int value, int iterations) {
         InsnList list = new InsnList();
         list.add(NodeUtils.generateIntPush(value));
 
-        for (int i = 0; i < (INSTANCE.multipleInstrucstions.getObject() ? iterations : 1); i++) {
+        for (int i = 0; i < (INSTANCE.multipleInstructions.getObject() ? iterations : 1); i++) {
             list = obfuscateInsnList(list);
         }
         return list;
@@ -99,6 +106,9 @@ public class NumberObfuscationProcessor implements IClassProcessor {
 
         int method;
 
+        boolean lenghtMode = true;
+        boolean xorMode = true;
+        boolean simpleMathMode = true;
         if (lenghtMode && (Math.abs(value) < 4 || (!xorMode && !simpleMathMode)))
             method = 0;
         else if (xorMode && (Math.abs(value) < Byte.MAX_VALUE || (!lenghtMode && !simpleMathMode)))
@@ -183,7 +193,7 @@ public class NumberObfuscationProcessor implements IClassProcessor {
     }
 
     @Override
-    public void process(ClassNode node) {
+    public void process(ProcessorCallback callback, ClassNode node) {
         if (!enabled.getObject()) return;
 
         int i = 0;
@@ -207,7 +217,7 @@ public class NumberObfuscationProcessor implements IClassProcessor {
                     if (!Modifier.isInterface(node.access)
 //                            && mode == 1
                             && extractToArray.getObject()
-                            ) {
+                    ) {
                         int containedSlot = -1;
                         int j = 0;
                         for (Integer integer : integerList) {

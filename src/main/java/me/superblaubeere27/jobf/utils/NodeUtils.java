@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2017-2019 superblaubeere27, Sam Sun, MarcoMC
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 package me.superblaubeere27.jobf.utils;
 
 import me.superblaubeere27.jobf.JObf;
@@ -19,14 +29,9 @@ import java.util.function.Predicate;
 
 import static org.objectweb.asm.Opcodes.*;
 
-/**
- * Copyright © 2015 - 2017 | CCBlueX | All rights reserved.
- * <p>
- * Fume - By CCBlueX(Marco)
- */
 public class NodeUtils {
-    private final static HashMap<Type, Integer> TYPE_TO_LOAD = new HashMap<>();
-    private final static HashMap<Type, Integer> TYPE_TO_STORE = new HashMap<>();
+    private static final Printer printer = new Textifier();
+    private static final TraceMethodVisitor methodPrinter = new TraceMethodVisitor(printer);
     private static HashMap<Type, String> TYPE_TO_WRAPPER = new HashMap<>();
 
     static {
@@ -40,29 +45,7 @@ public class NodeUtils {
         TYPE_TO_WRAPPER.put(Type.LONG_TYPE, "java/lang/Long");
         TYPE_TO_WRAPPER.put(Type.DOUBLE_TYPE, "java/lang/Double");
 
-        TYPE_TO_LOAD.put(Type.INT_TYPE, Opcodes.ILOAD);
-        TYPE_TO_LOAD.put(Type.VOID_TYPE, Opcodes.NOP);
-        TYPE_TO_LOAD.put(Type.BOOLEAN_TYPE, Opcodes.ILOAD);
-        TYPE_TO_LOAD.put(Type.CHAR_TYPE, Opcodes.ILOAD);
-        TYPE_TO_LOAD.put(Type.BYTE_TYPE, Opcodes.ILOAD);
-        TYPE_TO_LOAD.put(Type.SHORT_TYPE, Opcodes.ILOAD);
-        TYPE_TO_LOAD.put(Type.FLOAT_TYPE, Opcodes.FLOAD);
-        TYPE_TO_LOAD.put(Type.LONG_TYPE, Opcodes.LLOAD);
-        TYPE_TO_LOAD.put(Type.DOUBLE_TYPE, Opcodes.DLOAD);
-
-        TYPE_TO_STORE.put(Type.INT_TYPE, Opcodes.ISTORE);
-        TYPE_TO_STORE.put(Type.VOID_TYPE, Opcodes.NOP);
-        TYPE_TO_STORE.put(Type.BOOLEAN_TYPE, Opcodes.ISTORE);
-        TYPE_TO_STORE.put(Type.CHAR_TYPE, Opcodes.ISTORE);
-        TYPE_TO_STORE.put(Type.BYTE_TYPE, Opcodes.ISTORE);
-        TYPE_TO_STORE.put(Type.SHORT_TYPE, Opcodes.ISTORE);
-        TYPE_TO_STORE.put(Type.FLOAT_TYPE, Opcodes.FSTORE);
-        TYPE_TO_STORE.put(Type.LONG_TYPE, Opcodes.LSTORE);
-        TYPE_TO_STORE.put(Type.DOUBLE_TYPE, Opcodes.DLOAD);
     }
-
-    private static final Printer printer = new Textifier();
-    private static final TraceMethodVisitor methodPrinter = new TraceMethodVisitor(printer);
 
     public static String prettyprint(AbstractInsnNode insnNode) {
         insnNode.accept(methodPrinter);
@@ -87,8 +70,9 @@ public class NodeUtils {
         printer.getText().clear();
         return sw.toString().trim();
     }
+
     public static AbstractInsnNode getWrapperMethod(Type type) {
-        if (TYPE_TO_WRAPPER.containsKey(type)) {
+        if (type.getSort() != Type.VOID && TYPE_TO_WRAPPER.containsKey(type)) {
             return new MethodInsnNode(Opcodes.INVOKESTATIC, TYPE_TO_WRAPPER.get(type), "valueOf", "(" + type.toString() + ")L" + TYPE_TO_WRAPPER.get(type) + ";", false);
         }
 

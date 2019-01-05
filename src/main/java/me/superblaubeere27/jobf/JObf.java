@@ -1,16 +1,28 @@
+/*
+ * Copyright (c) 2017-2019 superblaubeere27, Sam Sun, MarcoMC
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 package me.superblaubeere27.jobf;
 
+import com.google.common.io.ByteStreams;
 import joptsimple.OptionException;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
-import me.superblaubeere27.hwid.HWID;
 import me.superblaubeere27.jobf.processors.packager.Packager;
-import me.superblaubeere27.jobf.ui.GUI;
-import me.superblaubeere27.jobf.util.script.JObfScript;
+import me.superblaubeere27.jobf.util.values.ConfigManager;
+import me.superblaubeere27.jobf.util.values.Configuration;
 import me.superblaubeere27.jobf.utils.Templates;
 
 import javax.swing.*;
+import java.awt.*;
 import java.io.File;
+import java.io.FileInputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -76,21 +88,15 @@ public class JObf {
 //            throwable.printStackTrace();
 //        }
 
-        Templates.loadTemplates();
 
         OptionParser parser = new OptionParser();
         parser.accepts("help").forHelp();
         parser.accepts("version").forHelp();
-        parser.accepts("jarIn").withOptionalArg().required();
+        parser.accepts("config").withOptionalArg();
+        parser.accepts("jarIn").withRequiredArg().required();
         parser.accepts("jarOut").withRequiredArg();
-        parser.accepts("package").withOptionalArg().describedAs("Encrypts all classes");
-        parser.accepts("invokeDynamic").withOptionalArg().describedAs("Hides method calls.");
-        parser.accepts("packagerMainClass").requiredIf("package").availableIf("package").withOptionalArg();
-        parser.accepts("mode").withOptionalArg().describedAs("0 = Normal, 1 = Aggressive (Might not work)").ofType(Integer.class).defaultsTo(0);
-        parser.accepts("cp").withOptionalArg().describedAs("ClassPath; Only for name obfuscation").ofType(File.class);
+        parser.accepts("cp").withOptionalArg().describedAs("ClassPath").ofType(File.class);
         parser.accepts("scriptFile").withOptionalArg().describedAs("[Not documented] JS script file").ofType(File.class);
-        parser.accepts("nameobf").withOptionalArg().describedAs("!!! DEPRECATED !!!").ofType(boolean.class);
-        parser.accepts("hwid").withOptionalArg().describedAs("Enabled HWID protection").ofType(String.class);
         parser.accepts("log").withRequiredArg();
 
 
@@ -107,63 +113,75 @@ public class JObf {
 
             String jarIn = (String) options.valueOf("jarIn");
             String jarOut = (String) options.valueOf("jarOut");
-            String log = (String) options.valueOf("log");
-            int mode = (int) options.valueOf("mode");
-
 
 
             log(JObf.VERSION);
             log("Input:          " + jarIn);
             log("Output:         " + jarOut);
-            log("Log:            " + log);
 
-            List<File> fileList = new ArrayList<>();
+            List<String> libraries = new ArrayList<>();
 
             if (options.has("cp")) {
                 for (Object cp : options.valuesOf("cp")) {
-                    File file = (File) cp;
-
-                    if (file.isDirectory()) {
-                        Files.walk(file.toPath()).filter(p -> {
-                            String path = p.toString().toLowerCase();
-
-                            return path.endsWith(".jar") || path.endsWith(".zip");
-                        }).forEach(p -> fileList.add(p.toFile()));
-                    } else if (file.getName().endsWith(".jar") || file.getName().endsWith(".zip")) {
-                        fileList.add(file);
-                    }
+                    libraries.add(cp.toString());
                 }
             }
 
-//            for (File file : fileList) {
-//                System.out.println("ClassPath: " + file.getAbsolutePath());
-//            }
             String scriptContent = "";
 
             if (options.has("scriptFile")) {
                 scriptContent = new String(Files.readAllBytes(((File) options.valueOf("scriptFile")).toPath()), StandardCharsets.UTF_8);
             }
 
-            JObfScript script = new JObfScript(scriptContent);
+            Configuration config = new Configuration(jarIn, jarOut, scriptContent, libraries);
+
+            if (options.has("config")) {
+                File configFile = new File((String) options.valueOf("config"));
+
+                if (!configFile.exists()) {
+                    System.err.println("Config file doesn't exist");
+                    return;
+                }
+
+                config = ConfigManager.loadConfig(new String(ByteStreams.toByteArray(new FileInputStream(configFile)), StandardCharsets.UTF_8));
+            }
+
+            config.setInput(jarIn);
+            config.setOutput(jarOut);
+
+            if (!scriptContent.isEmpty()) config.setScript(scriptContent);
+
+            JObfImpl impl = new JObfImpl();
 
             try {
-                JObfImpl.processConsole(jarIn, jarOut, fileList, log, mode, options.has("package"), options.has("nameobf"), options.has("hwid"), options.has("invokeDynamic"), options.hasArgument("hwid") ? HWID.hexStringToByteArray((String) options.valueOf("hwid")) : HWID.generateHWID(), options.has("package") ? String.valueOf(options.valueOf("packagerMainClass")) : "", script);
+                impl.processJar(config);
             } catch (Exception e) {
                 System.err.println("ERROR: " + e.getMessage());
                 e.printStackTrace();
                 System.exit(1);
             }
         } catch (OptionException e) {
+            System.err.println("ERROR: " + e.getMessage() + " (try --help)");
+            e.printStackTrace();
+
+            if (GraphicsEnvironment.isHeadless()) {
+                return;
+            }
+
+            System.out.println("Starting in GUI Mode");
+
             try {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             } catch (Exception e1) {
                 e1.printStackTrace();
             }
+
+            Templates.loadTemplates();
+
             Packager.INSTANCE.isEnabled();
             gui = new GUI();
 //            e.printStackTrace();
 //            parser.printHelpOn(System.out);
-            System.err.println("ERROR: " + e.getMessage() + " (try --help)");
 
 //            e.printStackTrace();
         }
