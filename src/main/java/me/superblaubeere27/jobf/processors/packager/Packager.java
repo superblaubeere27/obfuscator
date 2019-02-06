@@ -13,6 +13,7 @@ package me.superblaubeere27.jobf.processors.packager;
 import me.superblaubeere27.jobf.IClassProcessor;
 import me.superblaubeere27.jobf.JObfImpl;
 import me.superblaubeere27.jobf.ProcessorCallback;
+import me.superblaubeere27.jobf.processors.name.ClassWrapper;
 import me.superblaubeere27.jobf.util.values.*;
 import me.superblaubeere27.jobf.utils.NameUtils;
 import me.superblaubeere27.jobf.utils.NodeUtils;
@@ -20,6 +21,7 @@ import org.objectweb.asm.*;
 import org.objectweb.asm.tree.ClassNode;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 import java.util.Random;
 
 import static org.objectweb.asm.Opcodes.T_BYTE;
@@ -55,6 +57,10 @@ public class Packager {
     public void init() {
         decryptionClassName = NameUtils.generateLocalVariableName();
         mainClass = autoFindMainClass.getObject() ? JObfImpl.INSTANCE.getMainClass() : mainClassValue.getObject();
+
+        if (autoFindMainClass.getObject() && mainClass == null) {
+            throw new RuntimeException("[Packager] Failed to resolve main class, please add it or specify it manually");
+        }
 //        DatatypeConverter.parseHexBinary();
 //        System.out.println(Arrays.toString(DatatypeConverter.parseHexBinary("A57BD48F77747419338AD9933A29A2D5")));
 //        System.out.println(Arrays.toString(HWID.hexStringToByteArray("A57BD48F77747419338AD9933A29A2D5")));
@@ -107,7 +113,7 @@ public class Packager {
         MethodVisitor mv;
         AnnotationVisitor av0;
 
-        cw.visit(Opcodes.V1_6, Opcodes.ACC_PUBLIC + Opcodes.ACC_SUPER, decryptionClassName, null, "java/lang/ClassLoader", null);
+        cw.visit(Opcodes.V1_6, Opcodes.ACC_PUBLIC + Opcodes.ACC_SUPER, decryptionClassName, null, "java/lang/ClassLoader", new String[0]);
 
         {
             fv = cw.visitField(Opcodes.ACC_PRIVATE + Opcodes.ACC_STATIC, keyFieldName, "[B", null, null);
@@ -135,7 +141,7 @@ public class Packager {
             mv.visitMaxs(8, 0);
             mv.visitEnd();
         } else {
-            mv = cw.visitMethod(Opcodes.ACC_STATIC, "<clinit>", "()V", null, null);
+            mv = cw.visitMethod(Opcodes.ACC_STATIC, "<clinit>", "()V", null, new String[0]);
             mv.visitCode();
             Label l0 = new Label();
             mv.visitLabel(l0);
@@ -187,7 +193,7 @@ public class Packager {
             mv.visitEnd();
         }
         {
-            mv = cw.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
+            mv = cw.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, new String[0]);
             mv.visitCode();
             Label l0 = new Label();
             mv.visitLabel(l0);
@@ -201,7 +207,7 @@ public class Packager {
             mv.visitEnd();
         }
         {
-            mv = cw.visitMethod(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, "main", "([Ljava/lang/String;)V", null, null);
+            mv = cw.visitMethod(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, "main", "([Ljava/lang/String;)V", null, new String[0]);
             mv.visitCode();
             Label l0 = new Label();
             Label l1 = new Label();
@@ -215,7 +221,7 @@ public class Packager {
             Label l3 = new Label();
             mv.visitLabel(l3);
             mv.visitVarInsn(Opcodes.ALOAD, 1);
-            mv.visitLdcInsn(mainClass);
+            mv.visitLdcInsn(Objects.requireNonNull(mainClass));
             mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/ClassLoader", "loadClass", "(Ljava/lang/String;)Ljava/lang/Class;", false);
             mv.visitVarInsn(Opcodes.ASTORE, 2);
             Label l4 = new Label();
@@ -317,7 +323,7 @@ public class Packager {
             mv.visitEnd();
         }
         {
-            mv = cw.visitMethod(Opcodes.ACC_PRIVATE + Opcodes.ACC_STATIC, xorMethodName, "([B[B)[B", null, null);
+            mv = cw.visitMethod(Opcodes.ACC_PRIVATE + Opcodes.ACC_STATIC, xorMethodName, "([B[B)[B", null, new String[0]);
             mv.visitCode();
             Label l0 = new Label();
             mv.visitLabel(l0);
@@ -563,6 +569,12 @@ public class Packager {
         cw.visitEnd();
 
         ProcessorCallback callback = new ProcessorCallback();
+
+        ClassWriter classWriter1 = new ClassWriter(0);
+
+        cw.accept(classWriter1);
+
+        JObfImpl.INSTANCE.getClassPath().put(cw.name, new ClassWrapper(cw, false, classWriter1.toByteArray()));
 
         for (IClassProcessor processor : JObfImpl.processors) {
             processor.process(callback, cw);

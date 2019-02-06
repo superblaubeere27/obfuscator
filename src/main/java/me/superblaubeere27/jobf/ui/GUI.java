@@ -28,6 +28,7 @@ import org.fife.ui.rtextarea.RTextScrollPane;
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -57,6 +58,8 @@ public class GUI extends JFrame {
     private JList<String> libraries;
     private JButton addButton;
     private JButton removeButton;
+    private JSlider threadsSlider;
+    private JLabel threadsLabel;
     private List<String> libraryList = new ArrayList<>();
 
     {
@@ -167,6 +170,15 @@ public class GUI extends JFrame {
                 JOptionPane.showMessageDialog(GUI.this, "Maybe you should select a library before removing it :thinking:", "Hmmmm...", JOptionPane.ERROR_MESSAGE);
             }
         });
+
+        int cores = Runtime.getRuntime().availableProcessors();
+
+
+        threadsSlider.addChangeListener(e -> threadsLabel.setText(Integer.toString(threadsSlider.getValue())));
+
+        threadsSlider.setMinimum(1);
+        threadsSlider.setMaximum(cores);
+        threadsSlider.setValue(cores);
     }
 
     private void updateLibraries() {
@@ -264,11 +276,14 @@ public class GUI extends JFrame {
         try {
             new Thread(() -> {
                 obfuscateButton.setEnabled(false);
+
                 try {
                     Configuration config = new Configuration(inputTextField.getText(), outputTextField.getText(), scriptArea.getText(), libraryList);
 
+                    JObfImpl.INSTANCE.setThreadCount(threadsSlider.getValue());
+
                     JObfImpl.INSTANCE.processJar(config);
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     e.printStackTrace();
                     JOptionPane.showMessageDialog(this, e.toString(), "ERROR", JOptionPane.ERROR_MESSAGE);
                 }
@@ -293,7 +308,7 @@ public class GUI extends JFrame {
         tabbedPane1 = new JTabbedPane();
         panel1.add(tabbedPane1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, new Dimension(200, 200), null, 0, false));
         final JPanel panel2 = new JPanel();
-        panel2.setLayout(new GridLayoutManager(5, 3, new Insets(0, 0, 0, 0), -1, -1));
+        panel2.setLayout(new GridLayoutManager(6, 3, new Insets(0, 0, 0, 0), -1, -1));
         tabbedPane1.addTab(ResourceBundle.getBundle("strings").getString("input.output"), panel2);
         inputTextField = new JTextField();
         panel2.add(inputTextField, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
@@ -312,13 +327,13 @@ public class GUI extends JFrame {
         this.$$$loadLabelText$$$(label2, ResourceBundle.getBundle("strings").getString("output"));
         panel2.add(label2, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         libraries = new JList();
-        panel2.add(libraries, new GridConstraints(3, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(150, 50), null, 0, false));
+        panel2.add(libraries, new GridConstraints(4, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(150, 50), null, 0, false));
         final JLabel label3 = new JLabel();
         label3.setText("Libraries:");
         panel2.add(label3, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JPanel panel3 = new JPanel();
         panel3.setLayout(new GridLayoutManager(3, 1, new Insets(0, 0, 0, 0), -1, -1));
-        panel2.add(panel3, new GridConstraints(3, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        panel2.add(panel3, new GridConstraints(4, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         addButton = new JButton();
         addButton.setText("Add");
         panel3.add(addButton, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
@@ -327,6 +342,19 @@ public class GUI extends JFrame {
         removeButton = new JButton();
         removeButton.setText("Remove");
         panel3.add(removeButton, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        threadsSlider = new JSlider();
+        threadsSlider.setMinimum(1);
+        threadsSlider.setPaintLabels(true);
+        threadsSlider.setPaintTicks(true);
+        threadsSlider.setPaintTrack(true);
+        threadsSlider.setSnapToTicks(true);
+        panel2.add(threadsSlider, new GridConstraints(3, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JLabel label4 = new JLabel();
+        label4.setText("Threads");
+        panel2.add(label4, new GridConstraints(3, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        threadsLabel = new JLabel();
+        threadsLabel.setText("");
+        panel2.add(threadsLabel, new GridConstraints(3, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JPanel panel4 = new JPanel();
         panel4.setLayout(new GridLayoutManager(1, 1, new Insets(0, 0, 0, 0), -1, -1));
         tabbedPane1.addTab("Processors", panel4);

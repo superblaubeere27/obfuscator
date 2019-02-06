@@ -10,26 +10,6 @@
 
 package me.superblaubeere27.jobf;
 
-import me.superblaubeere27.jobf.util.values.BooleanValue;
-import me.superblaubeere27.jobf.util.values.DeprecationLevel;
-import me.superblaubeere27.jobf.util.values.NumberValue;
-
 public class JObfSettings {
-    private static final String PROCESSOR_NAME = "General";
-
-    private BooleanValue multithreading = new BooleanValue(PROCESSOR_NAME, "Multithreading", "Enables Multithreading", DeprecationLevel.GOOD, true);
-    private NumberValue<Integer> threads = new NumberValue<>(PROCESSOR_NAME, "Threads", "Count of threads; Please don't use more threads than you have CPU cores.", DeprecationLevel.GOOD, 1);
-
-    JObfSettings() {
-        try {
-            threads.setObject(Runtime.getRuntime().availableProcessors());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    int getThreads() {
-        return multithreading.getObject() ? Math.max(threads.getObject(), 1) : 1;
-    }
 
 }

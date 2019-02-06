@@ -61,7 +61,7 @@ public class JObfImpl {
     private int computeMode;
     private boolean invokeDynamic;
     private JObfSettings settings = new JObfSettings();
-
+    private int threadCount = Math.max(1, Runtime.getRuntime().availableProcessors());
 
 
     public JObfImpl() {
@@ -207,7 +207,7 @@ public class JObfImpl {
         this.script = script;
     }
 
-    public void processJar(Configuration config) {
+    public void processJar(Configuration config) throws IOException {
         ZipInputStream inJar = null;
         ZipOutputStream outJar = null;
 
@@ -326,7 +326,7 @@ public class JObfImpl {
 
             List<Thread> threads = new ArrayList<>();
 
-            for (int i = 0; i < settings.getThreads(); i++) {
+            for (int i = 0; i < threadCount; i++) {
                 ZipOutputStream finalOutJar = outJar;
 
                 Thread t = new Thread(() -> {
@@ -431,7 +431,7 @@ public class JObfImpl {
             }
 
             while (!threads.isEmpty()) {
-                threads.stream().filter(thread -> thread != null && !thread.isAlive()).collect(Collectors.toList()).forEach(threads::remove);
+                threads.stream().filter(thread -> thread == null || !thread.isAlive()).collect(Collectors.toList()).forEach(threads::remove);
 
                 Thread.sleep(100);
             }
@@ -465,8 +465,9 @@ public class JObfImpl {
                 outJar.closeEntry();
                 JObf.log.info("Packaging finished.");
             }
+        } catch (InterruptedException e) {
         } catch (Exception e) {
-            e.printStackTrace();
+            throw e;
         } finally {
             classPath.clear();
             classes.clear();
@@ -500,4 +501,7 @@ public class JObfImpl {
     }
 
 
+    public void setThreadCount(int threadCount) {
+        this.threadCount = threadCount;
+    }
 }
