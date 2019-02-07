@@ -8,33 +8,16 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package me.superblaubeere27.jobf.util.script;
+package me.superblaubeere27.jobf.utils.values;
 
-import javax.script.*;
+public class NumberValue<T extends Number> extends Value<T> {
 
-public class JObfScriptManager {
-
-    public static void main(String[] args) {
-        try {
-            ScriptEngine jsEngine = new ScriptEngineManager().getEngineByName("nashorn");
-            ScriptContext context = jsEngine.getContext();
-            jsEngine.eval("function isNameObfEnabled(className) {\n" +
-                    "    if (!className.contains('x')) {\n" +
-                    "        print('I will obfuscate ' + className);\n" +
-                    "            return true;\n" +
-                    "    }\n" +
-                    "    return false;\n" +
-                    "}");
-            Invocable inv = (Invocable) jsEngine;
-            try {
-                System.out.println(inv.invokeFunction("isNameObfEnabled", "avg"));
-                System.out.println(inv.invokeFunction("isNameObfEnabled", "xxx"));
-            } catch (NoSuchMethodException e) {
-                e.printStackTrace();
-            }
-        } catch (ScriptException e) {
-            e.printStackTrace();
-        }
+    public NumberValue(String owner, String name, String description, DeprecationLevel deprecated, T object) {
+        super(owner, name, description, deprecated, object);
     }
+    public NumberValue(String owner, String name, DeprecationLevel deprecated, T object) {
+        super(owner, name, deprecated, object);
+    }
+
 
 }

@@ -13,8 +13,8 @@ package me.superblaubeere27.jobf.processors;
 import me.superblaubeere27.jobf.IClassProcessor;
 import me.superblaubeere27.jobf.JObfImpl;
 import me.superblaubeere27.jobf.ProcessorCallback;
-import me.superblaubeere27.jobf.util.values.DeprecationLevel;
-import me.superblaubeere27.jobf.util.values.EnabledValue;
+import me.superblaubeere27.jobf.utils.values.DeprecationLevel;
+import me.superblaubeere27.jobf.utils.values.EnabledValue;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
@@ -22,13 +22,13 @@ import org.objectweb.asm.tree.MethodNode;
 
 import java.util.Random;
 
-public class SBProcessor implements IClassProcessor {
+public class HideMembers implements IClassProcessor {
     private static final String PROCESSOR_NAME = "HideMembers";
     private static Random random = new Random();
     private JObfImpl inst;
     private EnabledValue enabled = new EnabledValue(PROCESSOR_NAME, DeprecationLevel.GOOD, true);
 
-    public SBProcessor(JObfImpl inst) {
+    public HideMembers(JObfImpl inst) {
         this.inst = inst;
     }
 

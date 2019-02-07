@@ -12,8 +12,8 @@ package me.superblaubeere27;
 
 import com.google.common.io.ByteStreams;
 import me.superblaubeere27.jobf.JObfImpl;
-import me.superblaubeere27.jobf.util.values.ConfigManager;
-import me.superblaubeere27.jobf.util.values.Configuration;
+import me.superblaubeere27.jobf.utils.values.ConfigManager;
+import me.superblaubeere27.jobf.utils.values.Configuration;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;

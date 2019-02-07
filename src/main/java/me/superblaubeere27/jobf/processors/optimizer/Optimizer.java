@@ -12,9 +12,9 @@ package me.superblaubeere27.jobf.processors.optimizer;
 
 import me.superblaubeere27.jobf.IClassProcessor;
 import me.superblaubeere27.jobf.ProcessorCallback;
-import me.superblaubeere27.jobf.util.values.BooleanValue;
-import me.superblaubeere27.jobf.util.values.DeprecationLevel;
-import me.superblaubeere27.jobf.util.values.EnabledValue;
+import me.superblaubeere27.jobf.utils.values.BooleanValue;
+import me.superblaubeere27.jobf.utils.values.DeprecationLevel;
+import me.superblaubeere27.jobf.utils.values.EnabledValue;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 

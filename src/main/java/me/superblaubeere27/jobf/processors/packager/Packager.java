@@ -14,9 +14,9 @@ import me.superblaubeere27.jobf.IClassProcessor;
 import me.superblaubeere27.jobf.JObfImpl;
 import me.superblaubeere27.jobf.ProcessorCallback;
 import me.superblaubeere27.jobf.processors.name.ClassWrapper;
-import me.superblaubeere27.jobf.util.values.*;
 import me.superblaubeere27.jobf.utils.NameUtils;
 import me.superblaubeere27.jobf.utils.NodeUtils;
+import me.superblaubeere27.jobf.utils.values.*;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.ClassNode;
 

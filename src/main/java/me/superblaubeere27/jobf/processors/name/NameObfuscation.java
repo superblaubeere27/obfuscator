@@ -12,10 +12,10 @@ package me.superblaubeere27.jobf.processors.name;
 
 import me.superblaubeere27.jobf.JObf;
 import me.superblaubeere27.jobf.JObfImpl;
-import me.superblaubeere27.jobf.util.values.DeprecationLevel;
-import me.superblaubeere27.jobf.util.values.EnabledValue;
 import me.superblaubeere27.jobf.utils.ClassTree;
 import me.superblaubeere27.jobf.utils.NameUtils;
+import me.superblaubeere27.jobf.utils.values.DeprecationLevel;
+import me.superblaubeere27.jobf.utils.values.EnabledValue;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.commons.ClassRemapper;
 import org.objectweb.asm.commons.Remapper;

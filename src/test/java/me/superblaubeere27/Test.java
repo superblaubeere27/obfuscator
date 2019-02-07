@@ -22,9 +22,7 @@ public class Test {
     }
 
     public static void main(String[] args) {
-//        for (int i = 0; i < 100; i++) {
-//            System.out.println(ClassNameGenerator.className(Utils.random(2, 4)));
-//        }
+        System.out.println();
     }
 
     private static CallSite bootstrap(final MethodHandles.Lookup lookup, final String s, final MethodType methodType) throws NoSuchMethodException, IllegalAccessException {

@@ -13,11 +13,11 @@ package me.superblaubeere27.jobf.processors;
 import me.superblaubeere27.jobf.IClassProcessor;
 import me.superblaubeere27.jobf.JObfImpl;
 import me.superblaubeere27.jobf.ProcessorCallback;
-import me.superblaubeere27.jobf.util.values.BooleanValue;
-import me.superblaubeere27.jobf.util.values.DeprecationLevel;
-import me.superblaubeere27.jobf.util.values.EnabledValue;
-import me.superblaubeere27.jobf.util.values.StringValue;
 import me.superblaubeere27.jobf.utils.NameUtils;
+import me.superblaubeere27.jobf.utils.values.BooleanValue;
+import me.superblaubeere27.jobf.utils.values.DeprecationLevel;
+import me.superblaubeere27.jobf.utils.values.EnabledValue;
+import me.superblaubeere27.jobf.utils.values.StringValue;
 import org.objectweb.asm.tree.*;
 
 import java.util.ArrayList;

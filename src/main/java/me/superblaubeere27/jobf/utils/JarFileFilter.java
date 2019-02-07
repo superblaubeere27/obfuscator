@@ -8,15 +8,20 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package me.superblaubeere27.jobf.util.values;
+package me.superblaubeere27.jobf.utils;
 
-public class BooleanValue extends Value<Boolean> {
+import javax.swing.filechooser.FileFilter;
+import java.io.File;
 
-    public BooleanValue(String owner, String name, DeprecationLevel deprecation, Boolean object) {
-        super(owner, name, deprecation, object);
+public class JarFileFilter extends FileFilter {
+    @Override
+    public boolean accept(File f) {
+        String name = f.getName();
+        return f.isDirectory() || name.endsWith(".jar") || name.endsWith(".zip");
     }
 
-    public BooleanValue(String owner, String name, String description, DeprecationLevel deprecation, Boolean object) {
-        super(owner, name, description, deprecation, object);
+    @Override
+    public String getDescription() {
+        return "Java Archives (*.jar/*.zip)";
     }
 }

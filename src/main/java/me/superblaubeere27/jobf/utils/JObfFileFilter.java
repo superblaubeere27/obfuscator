@@ -8,16 +8,19 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package me.superblaubeere27.jobf.util.values;
+package me.superblaubeere27.jobf.utils;
 
-public class NumberValue<T extends Number> extends Value<T> {
+import javax.swing.filechooser.FileFilter;
+import java.io.File;
 
-    public NumberValue(String owner, String name, String description, DeprecationLevel deprecated, T object) {
-        super(owner, name, description, deprecated, object);
+public class JObfFileFilter extends FileFilter {
+    @Override
+    public boolean accept(File f) {
+        return true;
     }
-    public NumberValue(String owner, String name, DeprecationLevel deprecated, T object) {
-        super(owner, name, deprecated, object);
+
+    @Override
+    public String getDescription() {
+        return "JObf files (*.jocfg)";
     }
-
-
 }

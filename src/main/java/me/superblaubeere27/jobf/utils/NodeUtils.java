@@ -11,7 +11,6 @@
 package me.superblaubeere27.jobf.utils;
 
 import me.superblaubeere27.jobf.JObf;
-import me.superblaubeere27.jobf.util.Util;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -88,7 +87,7 @@ public class NodeUtils {
 
     public static AbstractInsnNode getUnWrapMethod(Type type) {
         if (TYPE_TO_WRAPPER.containsKey(type)) {
-            String internalName = Util.getInternalName(type);
+            String internalName = Utils.getInternalName(type);
             return new MethodInsnNode(Opcodes.INVOKESTATIC, TYPE_TO_WRAPPER.get(type), internalName + "Value", "(L" + TYPE_TO_WRAPPER.get(type) + ";)" + type.toString(), false);
         }
 

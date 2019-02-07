@@ -10,7 +10,6 @@
 
 package me.superblaubeere27.jobf.utils;
 
-import me.superblaubeere27.jobf.util.Util;
 import org.objectweb.asm.tree.ClassNode;
 
 import java.util.HashMap;
@@ -64,7 +63,7 @@ public class NameUtils {
         int id = packageMap.get(packageName);
         packageMap.put(packageName, id + 1);
 
-        return Util.toIl(id);
+        return Utils.toIl(id);
 //        return ClassNameGenerator.className(Utils.random(2, 5));
     }
 
@@ -103,8 +102,8 @@ public class NameUtils {
 
 //        System.out.println(className + "/" + desc + ":" + descMap);
 
-//        return Util.toIl(i);
-        return Util.toIl(METHODS++);
+//        return Utils.toIl(i);
+        return Utils.toIl(METHODS++);
     }
 
     public static String generateMethodName(final ClassNode classNode, String desc) {
@@ -119,8 +118,8 @@ public class NameUtils {
 //        int i = USED_FIELDNAMES.get(className);
 //        USED_FIELDNAMES.put(className, i + 1);
 //
-//        return Util.toIl(i);
-        return Util.toIl(FIELDS++);
+//        return Utils.toIl(i);
+        return Utils.toIl(FIELDS++);
     }
 
     public static String generateFieldName(final ClassNode classNode) {
@@ -132,7 +131,7 @@ public class NameUtils {
     }
 
     public static String generateLocalVariableName() {
-        return Util.toIl(localVars--);
+        return Utils.toIl(localVars--);
     }
 
     private static int getLenght() {

@@ -8,40 +8,33 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package me.superblaubeere27.jobf.processors;
+package me.superblaubeere27.jobf.utils.script;
 
-import me.superblaubeere27.jobf.IClassProcessor;
-import me.superblaubeere27.jobf.JObfImpl;
-import me.superblaubeere27.jobf.ProcessorCallback;
-import me.superblaubeere27.jobf.utils.NameUtils;
-import me.superblaubeere27.jobf.utils.values.DeprecationLevel;
-import me.superblaubeere27.jobf.utils.values.EnabledValue;
-import org.objectweb.asm.tree.ClassNode;
+import javax.script.*;
 
-import java.lang.reflect.Modifier;
+public class JObfScriptManager {
 
-public class CrasherProcessor implements IClassProcessor {
-    private EnabledValue enabled = new EnabledValue("Crasher", DeprecationLevel.GOOD, false);
-    private JObfImpl inst;
-
-    public CrasherProcessor(JObfImpl inst) {
-        this.inst = inst;
-    }
-
-    @Override
-    public void process(ProcessorCallback callback, ClassNode node) {
-        if (Modifier.isInterface(node.access)) return;
-        if (!enabled.getObject()) return;
-
-        /*
-         * By ItzSomebody
-         */
-        if (node.signature == null) {
-            node.signature = NameUtils.crazyString(10);
+    public static void main(String[] args) {
+        try {
+            ScriptEngine jsEngine = new ScriptEngineManager().getEngineByName("nashorn");
+            ScriptContext context = jsEngine.getContext();
+            jsEngine.eval("function isNameObfEnabled(className) {\n" +
+                    "    if (!className.contains('x')) {\n" +
+                    "        print('I will obfuscate ' + className);\n" +
+                    "            return true;\n" +
+                    "    }\n" +
+                    "    return false;\n" +
+                    "}");
+            Invocable inv = (Invocable) jsEngine;
+            try {
+                System.out.println(inv.invokeFunction("isNameObfEnabled", "avg"));
+                System.out.println(inv.invokeFunction("isNameObfEnabled", "xxx"));
+            } catch (NoSuchMethodException e) {
+                e.printStackTrace();
+            }
+        } catch (ScriptException e) {
+            e.printStackTrace();
         }
-
-        inst.setWorkDone();
     }
-
 
 }
