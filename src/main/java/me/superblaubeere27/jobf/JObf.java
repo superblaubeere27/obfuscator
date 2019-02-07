@@ -257,9 +257,13 @@ public class JObf {
             System.out.println("Starting in GUI Mode");
 
             try {
-                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+                UIManager.setLookAndFeel("com.bulenkov.darcula.DarculaLaf");
             } catch (Exception e1) {
-                e1.printStackTrace();
+                try {
+                    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+                } catch (Exception e2) {
+                    e1.printStackTrace();
+                }
             }
 
             Templates.loadTemplates();
