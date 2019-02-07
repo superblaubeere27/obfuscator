@@ -14,15 +14,17 @@ import me.superblaubeere27.jobf.IClassProcessor;
 import me.superblaubeere27.jobf.JObfImpl;
 import me.superblaubeere27.jobf.ProcessorCallback;
 import me.superblaubeere27.jobf.processors.NumberObfuscationProcessor;
-import me.superblaubeere27.jobf.util.values.BooleanValue;
-import me.superblaubeere27.jobf.util.values.DeprecationLevel;
-import me.superblaubeere27.jobf.util.values.EnabledValue;
 import me.superblaubeere27.jobf.utils.NameUtils;
 import me.superblaubeere27.jobf.utils.NodeUtils;
+import me.superblaubeere27.jobf.utils.values.BooleanValue;
+import me.superblaubeere27.jobf.utils.values.DeprecationLevel;
+import me.superblaubeere27.jobf.utils.values.EnabledValue;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
 
 import static me.superblaubeere27.jobf.processors.flowObfuscation.LocalVariableMangler.mangleLocalVariables;
@@ -37,6 +39,7 @@ public class FlowObfuscator implements IClassProcessor {
     private BooleanValue mangleSwitchesEnabled = new BooleanValue(PROCESSOR_NAME, "Mangle Switches", "Replaces switch statements with if-else statements", DeprecationLevel.GOOD, true);
     private BooleanValue mangleReturn = new BooleanValue(PROCESSOR_NAME, "Mangle Return", "!! Needs COMPUTE_FRAMES (See documentation) !!", DeprecationLevel.BAD, false);
     private BooleanValue mangleLocals = new BooleanValue(PROCESSOR_NAME, "Mangle Local Variables", "!! Needs COMPUTE_FRAMES (See documentation) !!", DeprecationLevel.BAD, false);
+    private BooleanValue mangleComparisions = new BooleanValue(PROCESSOR_NAME, "Mangle Comparisons", "Replaces long, float and double comparisons with method calls", DeprecationLevel.GOOD, true);
     private BooleanValue replaceGoto = new BooleanValue(PROCESSOR_NAME, "Replace GOTO", "Replaces unconditional jumps with conditionals", DeprecationLevel.GOOD, true);
     private BooleanValue replaceIf = new BooleanValue(PROCESSOR_NAME, "Replace If", "Replaces comparisions with method calls", DeprecationLevel.GOOD, true);
     private BooleanValue badPop = new BooleanValue(PROCESSOR_NAME, "Bad POP", DeprecationLevel.GOOD, true);
@@ -211,9 +214,8 @@ public class FlowObfuscator implements IClassProcessor {
         insnList.add(new InsnNode(Opcodes.ACONST_NULL));
         insnList.add(new InsnNode(Opcodes.ATHROW));
 
-        for (int j = 0; j < random.nextInt(2) + 1; j++) {
+        for (int j = 0; j < random.nextInt(2) + 1; j++)
             insnList = NumberObfuscationProcessor.obfuscateInsnList(insnList);
-        }
 
         return insnList;
     }
@@ -294,10 +296,15 @@ public class FlowObfuscator implements IClassProcessor {
 
         HashMap<Integer, MethodNode> jumpMethodMap = new HashMap<>();
 
+        List<MethodNode> toAdd = new ArrayList<>();
+
         for (MethodNode method : node.methods) {
             if (mangleLocals.getObject()) mangleLocalVariables(callback, node, method);
             if (mangleReturn.getObject()) mangleReturn(callback, method);
             if (mangleSwitchesEnabled.getObject()) mangleSwitches(method);
+            if (mangleComparisions.getObject())
+                toAdd.addAll(FloatingPointComparisionMangler.mangleComparisions(node, method));
+
 
             for (AbstractInsnNode abstractInsnNode : method.instructions.toArray()) {
                 if (badPop.getObject() && abstractInsnNode instanceof JumpInsnNode && abstractInsnNode.getOpcode() == Opcodes.GOTO) {
@@ -358,6 +365,7 @@ public class FlowObfuscator implements IClassProcessor {
         }
 
         node.methods.addAll(jumpMethodMap.values());
+        node.methods.addAll(toAdd);
 
         inst.setWorkDone();
     }
