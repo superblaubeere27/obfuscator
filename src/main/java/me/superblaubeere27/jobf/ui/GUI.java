@@ -15,20 +15,20 @@ import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
 import me.superblaubeere27.jobf.JObf;
 import me.superblaubeere27.jobf.JObfImpl;
-import me.superblaubeere27.jobf.util.JObfFileFilter;
-import me.superblaubeere27.jobf.util.JarFileFilter;
-import me.superblaubeere27.jobf.util.Util;
-import me.superblaubeere27.jobf.util.values.*;
-import me.superblaubeere27.jobf.utils.Template;
-import me.superblaubeere27.jobf.utils.Templates;
+import me.superblaubeere27.jobf.utils.*;
+import me.superblaubeere27.jobf.utils.values.*;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.Theme;
 import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -60,6 +60,7 @@ public class GUI extends JFrame {
     private JButton removeButton;
     private JSlider threadsSlider;
     private JLabel threadsLabel;
+    private JCheckBox verbose;
     private List<String> libraryList = new ArrayList<>();
 
     {
@@ -69,23 +70,34 @@ public class GUI extends JFrame {
         $$$setupUI$$$();
     }
 
-    public GUI() {
+    private void updateLibraries() {
+        Object[] libraries = libraryList.toArray();
+        this.libraries.setListData(Arrays.copyOf(libraries, libraries.length, String[].class));
+    }
+
+    public void scrollDown() {
+        if (this.autoScroll.isSelected()) {
+            this.logArea.setCaretPosition(this.logArea.getDocument().getLength());
+        }
+
+    }
+
+    public GUI(String updateCheckResult) {
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setContentPane(panel1);
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         setSize((int) (screenSize.getWidth() / 2), (int) (screenSize.getHeight() / 2));
         setLocationRelativeTo(null);
-        setVisible(true);
         setTitle(JObf.VERSION);
 
         inputBrowseButton.addActionListener(e -> {
-            String file = Util.chooseFile(null, GUI.this, new JarFileFilter());
+            String file = Utils.chooseFile(null, GUI.this, new JarFileFilter());
             if (file != null) {
                 inputTextField.setText(file);
             }
         });
         outputBrowseButton.addActionListener(e -> {
-            String file = Util.chooseFileToSave(null, GUI.this, new JarFileFilter());
+            String file = Utils.chooseFileToSave(null, GUI.this, new JarFileFilter());
             if (file != null) {
                 outputTextField.setText(file);
             }
@@ -93,7 +105,7 @@ public class GUI extends JFrame {
         obfuscateButton.addActionListener(e -> startObfuscator());
         buildButton.addActionListener(e -> buildConfig());
         saveButton.addActionListener(e -> {
-            String name = Util.chooseFileToSave(null, GUI.this, new JObfFileFilter());
+            String name = Utils.chooseFileToSave(null, GUI.this, new JObfFileFilter());
             if (name != null) {
                 buildConfig();
                 try {
@@ -105,7 +117,7 @@ public class GUI extends JFrame {
             }
         });
         loadButton.addActionListener(e -> {
-            String name = Util.chooseFile(null, GUI.this, new JObfFileFilter());
+            String name = Utils.chooseFile(null, GUI.this, new JObfFileFilter());
             if (name != null) {
                 buildConfig();
                 try {
@@ -151,10 +163,10 @@ public class GUI extends JFrame {
         });
 
         addButton.addActionListener(e -> {
-            String file = Util.chooseDirectoryOrFile(new File(System.getProperty("java.home")), GUI.this);
+            String file = Utils.chooseDirectoryOrFile(new File(System.getProperty("java.home")), GUI.this);
 
             if (file != null) {
-                if (new File(file).isDirectory() || Util.checkZip(file)) {
+                if (new File(file).isDirectory() || Utils.checkZip(file)) {
                     libraryList.add(file);
                     updateLibraries();
                 } else {
@@ -179,18 +191,30 @@ public class GUI extends JFrame {
         threadsSlider.setMinimum(1);
         threadsSlider.setMaximum(cores);
         threadsSlider.setValue(cores);
-    }
 
-    private void updateLibraries() {
-        Object[] libraries = libraryList.toArray();
-        this.libraries.setListData(Arrays.copyOf(libraries, libraries.length, String[].class));
-    }
 
-    public void scrollDown() {
-        if (this.autoScroll.isSelected()) {
-            this.logArea.setCaretPosition(this.logArea.getDocument().getLength());
+        setVisible(true);
+
+        if (updateCheckResult != null) {
+            JLabel label = new JLabel("<html>You are using an outdated version of obfuscator. Latest: " + updateCheckResult + "<br/> You can download the latest version at: <a>https://github.com/superblaubeere27/obfuscator/releases/latest</a> <br/>(Click on the link to open it)</html>");
+
+            label.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    try {
+                        Desktop.getDesktop().browse(new URI("https://github.com/superblaubeere27/obfuscator/releases/latest"));
+                    } catch (IOException | URISyntaxException e1) {
+                        e1.printStackTrace();
+                    }
+                }
+            });
+
+            JOptionPane.showMessageDialog(this, label, "Update available", JOptionPane.INFORMATION_MESSAGE);
         }
+    }
 
+    private void buildConfig() {
+        configPanel.setText(ConfigManager.generateConfig(new Configuration(inputTextField.getText(), outputTextField.getText(), scriptArea.getText(), libraryList), prettyPrintCheckBox.isSelected()));
     }
 
     private void initValues() {
@@ -219,7 +243,7 @@ public class GUI extends JFrame {
 
                     panel.add(new JLabel(booleanValue.getDescription() == null ? "" : booleanValue.getDescription()));
 
-                    Color c = Util.getColor(booleanValue.getDeprecation());
+                    Color c = Utils.getColor(booleanValue.getDeprecation());
 
                     if (c != null) {
                         checkBox.setForeground(c);
@@ -234,7 +258,7 @@ public class GUI extends JFrame {
                     textBox.addActionListener(event -> stringValue.setObject(textBox.getText()));
 
 
-                    Color c = Util.getColor(stringValue.getDeprecation());
+                    Color c = Utils.getColor(stringValue.getDeprecation());
 
                     if (c != null) {
                         textBox.setForeground(c);
@@ -260,10 +284,6 @@ public class GUI extends JFrame {
 //        }
     }
 
-    private void buildConfig() {
-        configPanel.setText(ConfigManager.generateConfig(new Configuration(inputTextField.getText(), outputTextField.getText(), scriptArea.getText(), libraryList), prettyPrintCheckBox.isSelected()));
-    }
-
     private void startObfuscator() {
 //        impl.loadConfig(config);
 
@@ -279,6 +299,8 @@ public class GUI extends JFrame {
 
                 try {
                     Configuration config = new Configuration(inputTextField.getText(), outputTextField.getText(), scriptArea.getText(), libraryList);
+
+                    JObf.VERBOSE = verbose.isSelected();
 
                     JObfImpl.INSTANCE.setThreadCount(threadsSlider.getValue());
 
@@ -403,10 +425,10 @@ public class GUI extends JFrame {
         loadTemplateButton.setText("Apply");
         panel8.add(loadTemplateButton, new GridConstraints(1, 0, 1, 3, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JPanel panel9 = new JPanel();
-        panel9.setLayout(new GridLayoutManager(2, 1, new Insets(0, 0, 0, 0), -1, -1));
+        panel9.setLayout(new GridLayoutManager(2, 2, new Insets(0, 0, 0, 0), -1, -1));
         tabbedPane1.addTab(ResourceBundle.getBundle("strings").getString("log"), panel9);
         final JScrollPane scrollPane2 = new JScrollPane();
-        panel9.add(scrollPane2, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
+        panel9.add(scrollPane2, new GridConstraints(0, 0, 1, 2, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
         logArea = new JTextArea();
         logArea.setEditable(false);
         scrollPane2.setViewportView(logArea);
@@ -414,6 +436,10 @@ public class GUI extends JFrame {
         autoScroll.setSelected(true);
         autoScroll.setText("AutoScroll");
         panel9.add(autoScroll, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        verbose = new JCheckBox();
+        verbose.setSelected(false);
+        verbose.setText("Verbose");
+        panel9.add(verbose, new GridConstraints(1, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         obfuscateButton = new JButton();
         this.$$$loadButtonText$$$(obfuscateButton, ResourceBundle.getBundle("strings").getString("obfuscate"));
         panel1.add(obfuscateButton, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));

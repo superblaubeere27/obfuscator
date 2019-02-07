@@ -20,12 +20,12 @@ import me.superblaubeere27.jobf.processors.name.InnerClassRemover;
 import me.superblaubeere27.jobf.processors.name.NameObfuscation;
 import me.superblaubeere27.jobf.processors.optimizer.Optimizer;
 import me.superblaubeere27.jobf.processors.packager.Packager;
-import me.superblaubeere27.jobf.util.Util;
-import me.superblaubeere27.jobf.util.script.JObfScript;
-import me.superblaubeere27.jobf.util.values.Configuration;
-import me.superblaubeere27.jobf.util.values.ValueManager;
 import me.superblaubeere27.jobf.utils.ClassTree;
 import me.superblaubeere27.jobf.utils.MissingClassException;
+import me.superblaubeere27.jobf.utils.Utils;
+import me.superblaubeere27.jobf.utils.script.JObfScript;
+import me.superblaubeere27.jobf.utils.values.Configuration;
+import me.superblaubeere27.jobf.utils.values.ValueManager;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ModifiedClassWriter;
 import org.objectweb.asm.tree.ClassNode;
@@ -180,7 +180,7 @@ public class JObfImpl {
         processors.add(new StringEncryptionProcessor(this));
         processors.add(new NumberObfuscationProcessor(this));
         processors.add(new FlowObfuscator(this));
-        processors.add(new SBProcessor(this));
+        processors.add(new HideMembers(this));
         processors.add(new LineNumberRemover(this));
         processors.add(new ShuffleMembersProcessor(this));
 
@@ -230,7 +230,7 @@ public class JObfImpl {
         for (String s : config.getLibraries()) libraryFiles.add(new File(s));
 
         try {
-            System.out.println("Loading classPath");
+            JObf.log.info("Loading classpath...");
             loadClasspath();
             try {
                 inJar = new ZipInputStream(new BufferedInputStream(new FileInputStream(config.getInput())));
@@ -245,6 +245,8 @@ public class JObfImpl {
                 throw new FileNotFoundException("Could not open output file: " + e.getMessage());
             }
             setMainClass(null);
+
+            JObf.log.info("Reading input...");
 
             while (true) {
                 ZipEntry entry = inJar.getNextEntry();
@@ -284,15 +286,14 @@ public class JObfImpl {
                         cr.accept(cn, 0);
                         classes.put(entryName, cn);
                     } catch (Exception e) {
-                        System.err.println("Failed to read class " + entryName);
+                        JObf.log.warning("Failed to read class " + entryName);
                         e.printStackTrace();
                         files.put(entryName, entryData);
                     }
 
                 } else {
                     if (entryName.equals("META-INF/MANIFEST.MF")) {
-                        setMainClass(Util.getMainClass(new String(entryData, StandardCharsets.UTF_8)));
-                        JObf.log.fine(mainClass);
+                        setMainClass(Utils.getMainClass(new String(entryData, StandardCharsets.UTF_8)));
                     }
 
                     files.put(entryName, entryData);
@@ -322,12 +323,15 @@ public class JObfImpl {
             }
 
 
+            JObf.log.info("Transforming with " + threadCount + " threads...");
+
             final LinkedList<Map.Entry<String, ClassNode>> classQueue = new LinkedList<>(classes.entrySet());
 
             List<Thread> threads = new ArrayList<>();
 
             for (int i = 0; i < threadCount; i++) {
                 ZipOutputStream finalOutJar = outJar;
+
 
                 Thread t = new Thread(() -> {
                     try {
@@ -353,7 +357,7 @@ public class JObfImpl {
 
 
                                     if (script == null || script.isObfuscatorEnabled(cn)) {
-                                        JObf.log.log(Level.INFO, String.format("[%s] (%s/%s), Processing %s", Thread.currentThread().getName(), processed, classes.size(), entryName));
+                                        JObf.log.log(Level.FINE, String.format("[%s] (%s/%s), Processing %s", Thread.currentThread().getName(), processed, classes.size(), entryName));
 
                                         for (IClassProcessor proc : processors) {
                                             try {
@@ -363,7 +367,7 @@ public class JObfImpl {
                                             }
                                         }
                                     } else {
-                                        JObf.log.log(Level.INFO, String.format("[%s] (%s/%s), Skipping %s", Thread.currentThread().getName(), processed, classes.size(), entryName));
+                                        JObf.log.log(Level.FINE, String.format("[%s] (%s/%s), Skipping %s", Thread.currentThread().getName(), processed, classes.size(), entryName));
                                     }
 
                                     if (callback.isForceComputeFrames())
@@ -373,7 +377,7 @@ public class JObfImpl {
                                     int mode = computeMode
                                             | (callback.isForceComputeFrames() ? ModifiedClassWriter.COMPUTE_FRAMES : 0);
 
-                                    JObf.log.log(Level.INFO, String.format("[%s] (%s/%s), Writing (computeMode = %s) %s", Thread.currentThread().getName(), processed, classes.size(), mode, entryName));
+                                    JObf.log.log(Level.FINE, String.format("[%s] (%s/%s), Writing (computeMode = %s) %s", Thread.currentThread().getName(), processed, classes.size(), mode, entryName));
 
                                     ModifiedClassWriter writer = new ModifiedClassWriter(
 //                                            computeMode
@@ -418,7 +422,9 @@ public class JObfImpl {
                             processed.getAndIncrement();
                         }
                     } finally {
-                        threads.remove(Thread.currentThread());
+                        synchronized (threads) {
+                            threads.remove(Thread.currentThread());
+                        }
                     }
                 });
 
@@ -427,15 +433,24 @@ public class JObfImpl {
 
                 t.start();
 
-                threads.add(t);
+                synchronized (threads) {
+                    threads.add(t);
+                }
             }
 
-            while (!threads.isEmpty()) {
-                threads.stream().filter(thread -> thread == null || !thread.isAlive()).collect(Collectors.toList()).forEach(threads::remove);
+
+            while (true) {
+                synchronized (threads) {
+                    if (threads.isEmpty()) break;
+
+                    threads.stream().filter(thread -> thread == null || !thread.isAlive()).collect(Collectors.toList()).forEach(threads::remove);
+                }
 
                 Thread.sleep(100);
             }
 
+
+            JObf.log.info("Writing resources...");
 
             for (Map.Entry<String, byte[]> stringEntry : files.entrySet()) {
                 String entryName = stringEntry.getKey();
@@ -443,20 +458,21 @@ public class JObfImpl {
 
                 if (entryName.equals("META-INF/MANIFEST.MF")) {
                     if (Packager.INSTANCE.isEnabled()) {
-                        entryData = Util.replaceMainClass(new String(entryData, StandardCharsets.UTF_8), Packager.INSTANCE.getDecryptionClassName()).getBytes(StandardCharsets.UTF_8);
+                        entryData = Utils.replaceMainClass(new String(entryData, StandardCharsets.UTF_8), Packager.INSTANCE.getDecryptionClassName()).getBytes(StandardCharsets.UTF_8);
                     } else if (mainClassChanged) {
-                        entryData = Util.replaceMainClass(new String(entryData, StandardCharsets.UTF_8), mainClass).getBytes(StandardCharsets.UTF_8);
+                        entryData = Utils.replaceMainClass(new String(entryData, StandardCharsets.UTF_8), mainClass).getBytes(StandardCharsets.UTF_8);
                         JObf.log.log(Level.FINE, "Replaced Main-Class with " + mainClass);
                     }
 
                     JObf.log.log(Level.FINE, "Processed MANIFEST.MF");
                 }
-                JObf.log.log(Level.INFO, "Copying " + entryName);
+                JObf.log.log(Level.FINE, "Copying " + entryName);
 
                 ZipEntry newEntry = new ZipEntry(entryName);
                 outJar.putNextEntry(newEntry);
                 outJar.write(entryData);
             }
+
             if (Packager.INSTANCE.isEnabled()) {
                 JObf.log.info("Packaging...");
                 byte[] decryptorData = Packager.INSTANCE.generateEncryptionClass();
@@ -465,9 +481,7 @@ public class JObfImpl {
                 outJar.closeEntry();
                 JObf.log.info("Packaging finished.");
             }
-        } catch (InterruptedException e) {
-        } catch (Exception e) {
-            throw e;
+        } catch (InterruptedException ignored) {
         } finally {
             classPath.clear();
             classes.clear();
@@ -478,6 +492,7 @@ public class JObfImpl {
 
             if (outJar != null) {
                 try {
+                    JObf.log.info("Finishing...");
                     outJar.flush();
                     outJar.close();
                     JObf.log.info(">>> Processing completed +" + (new File(config.getInput()).length() / ((float) new File(config.getOutput()).length()) * 100.0f) + "%");
