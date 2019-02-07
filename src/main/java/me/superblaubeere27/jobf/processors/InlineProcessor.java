@@ -11,6 +11,7 @@
 package me.superblaubeere27.jobf.processors;
 
 import me.superblaubeere27.jobf.IClassProcessor;
+import me.superblaubeere27.jobf.JObf;
 import me.superblaubeere27.jobf.JObfImpl;
 import me.superblaubeere27.jobf.ProcessorCallback;
 import me.superblaubeere27.jobf.utils.InliningUtils;
@@ -71,7 +72,7 @@ public class InlineProcessor implements IClassProcessor {
                         method.instructions.insert(abstractInsnNode, inline);
                         method.instructions.remove(abstractInsnNode);
 
-                        System.out.println("Inlined method in " + node.name + "." + method.name + method.desc + "(" + lookupClass.name + "." + lookupMethod.name + lookupMethod.desc + ")");
+                        JObf.log.fine("Inlined method in " + node.name + "." + method.name + method.desc + "(" + lookupClass.name + "." + lookupMethod.name + lookupMethod.desc + ")");
 
                         ok = true;
                     }

@@ -38,12 +38,15 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
+
 public class JObf {
     public static final String SHORT_VERSION = (JObf.class.getPackage().getImplementationVersion() == null ? "DEV" : "v" + JObf.class.getPackage().getImplementationVersion()) + " by superblaubeere27";
     public static final String VERSION = "obfuscator " + (JObf.class.getPackage().getImplementationVersion() == null ? "DEV" : "v" + JObf.class.getPackage().getImplementationVersion()) + " by superblaubeere27";
     public final static Logger log = Logger.getLogger("obfuscator");
-    private static GUI gui;
     public static boolean VERBOSE = false;
+    //#if buildType=="gui"
+    private static GUI gui;
+    //#endif
 
     public static void main(String[] args) throws Exception {
         if (JObf.class.getPackage().getImplementationVersion() == null) {
@@ -54,7 +57,6 @@ public class JObf {
         JObf.log.setUseParentHandlers(false);
         JObf.log.setLevel(Level.ALL);
         JObf.log.setFilter(record -> true);
-
 
 
         JObf.log.addHandler(new Handler() {
@@ -68,6 +70,7 @@ public class JObf {
                     if (record.getMessage() == null)
                         return;
 //                System.out.println(record.getMessage() + "/" + record.getParameters());
+                    //#if buildType=="gui"
                     if (gui != null) {
                         try {
                             gui.logArea.append(String.format(record.getMessage(), record.getParameters()) + "\n");
@@ -77,6 +80,7 @@ public class JObf {
                         gui.scrollDown();
 //                    System.out.println("lloool");
                     }
+                    //#endif
 
                     try {
                         System.out.println(String.format(record.getMessage(), record.getParameters()));
@@ -107,7 +111,6 @@ public class JObf {
         parser.accepts("scriptFile").withOptionalArg().describedAs("[Not documented] JS script file").ofType(File.class);
         parser.accepts("verbose").withOptionalArg();
         parser.accepts("threads").withOptionalArg().ofType(Integer.class).defaultsTo(Runtime.getRuntime().availableProcessors()).describedAs("Thread count; Please don't use more threads than you have cores. It might hang up your system");
-
 
 
         try {
@@ -156,7 +159,6 @@ public class JObf {
                     "Output:     " + jarOut,
                     "Config:     " + options.valueOf("config")
             )));
-
 
 
             List<String> libraries = new ArrayList<>();
@@ -240,6 +242,18 @@ public class JObf {
                 return;
             }
 
+            if (
+                //#if buildType=="gui"
+                    false &&
+                            //#endif
+                            true
+            ) {
+                log.severe("");
+                log.severe("This build is a headless build, so GUI is not available");
+                return;
+            }
+
+            //#if buildType=="gui"
             System.out.println("Starting in GUI Mode");
 
             try {
@@ -251,7 +265,9 @@ public class JObf {
             Templates.loadTemplates();
 
             Packager.INSTANCE.isEnabled();
+
             gui = new GUI(updateCheckResult);
+            //#endif
 //            e.printStackTrace();
 //            parser.printHelpOn(System.out);
 

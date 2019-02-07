@@ -11,6 +11,7 @@
 package me.superblaubeere27.jobf.utils.values;
 
 import com.google.gson.*;
+import me.superblaubeere27.jobf.JObf;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -114,7 +115,7 @@ public class ConfigManager {
                         value.setObject(moduleJson.get(value.getName()).getAsString());
                     }
                 } catch (Throwable e) {
-                    System.out.println(value.getName() + ": " + e);
+                    JObf.log.severe(value.getName() + ": " + e);
                 }
             }
         }

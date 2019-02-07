@@ -135,6 +135,36 @@
                     </archive>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>com.igormaznitsa</groupId>
+                <artifactId>jcp</artifactId>
+                <version>6.1.4</version>
+                <configuration>
+                    <globalVars>
+                        <property>
+                            <name>buildType</name>
+                            <value>gui</value> <!--headless or gui-->
+                        </property>
+                    </globalVars>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>preprocessSources</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>preprocess</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>clearGeneratedFolders</id>
+                        <goals>
+                            <goal>clear</goal>
+                        </goals>
+                    </execution>
+                </executions>
+
+            </plugin>
         </plugins>
     </build>
+
 </project>

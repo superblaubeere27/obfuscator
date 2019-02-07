@@ -202,8 +202,7 @@ public class NumberObfuscationProcessor implements IClassProcessor {
         for (MethodNode method : node.methods) {
             for (AbstractInsnNode abstractInsnNode : method.instructions.toArray()) {
                 if (abstractInsnNode == null) {
-                    System.out.println(method.name + method.desc);
-                    throw new RuntimeException();
+                    throw new RuntimeException("AbstractInsnNode is null. WTF?");
                 }
                 if (NodeUtils.isIntegerNumber(abstractInsnNode)) {
                     int number = NodeUtils.getIntValue(abstractInsnNode);

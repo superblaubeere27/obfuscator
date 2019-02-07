@@ -20,7 +20,6 @@ import me.superblaubeere27.jobf.utils.values.EnabledValue;
 import org.objectweb.asm.commons.ClassRemapper;
 import org.objectweb.asm.tree.ClassNode;
 
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -58,8 +57,6 @@ public class InnerClassRemover implements INameObfuscationProcessor, IClassProce
                 do {
                     mappedName = newName;
                 } while (!remapper.map(classNode.name, mappedName));
-
-                System.out.println(classNode.name + ": " + Modifier.toString(classNode.access) + " (" + classNode.access + ")");
             }
         }
 

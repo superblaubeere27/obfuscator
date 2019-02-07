@@ -375,7 +375,7 @@ public class InvokeDynamic implements IClassProcessor {
             return;
         }
         if (classNode.version == Opcodes.V1_1 || classNode.version < Opcodes.V1_4) {
-            System.err.println("!!! WARNING !!! " + classNode.name + "'s lang level is too low (VERSION > V1_4)");
+            JObf.log.warning("!!! WARNING !!! " + classNode.name + "'s lang level is too low (VERSION > V1_4)");
             return;
         }
 

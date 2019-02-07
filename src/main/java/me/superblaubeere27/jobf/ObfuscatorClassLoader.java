@@ -22,8 +22,6 @@ public class ObfuscatorClassLoader extends ClassLoader {
         if (JObfImpl.INSTANCE.getClassPath().containsKey(internalName)) {
             ClassWrapper classWrapper = JObfImpl.INSTANCE.getClassPath().get(internalName);
 
-            System.out.println("Uga uga " + name);
-
             return defineClass(name, classWrapper.originalClass, 0, classWrapper.originalClass.length);
         }
 

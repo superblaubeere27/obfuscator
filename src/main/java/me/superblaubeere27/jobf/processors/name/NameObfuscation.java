@@ -23,11 +23,11 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintStream;
 import java.lang.reflect.Modifier;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class NameObfuscation implements INameObfuscationProcessor {
@@ -52,7 +52,7 @@ public class NameObfuscation implements INameObfuscationProcessor {
         List<ClassWrapper> classWrappers = new ArrayList<>();
 
 
-        System.out.println("Building Hierarchy");
+        JObf.log.info("Building Hierarchy...");
 
         for (ClassNode value : nodes.values()) {
             ClassWrapper cw = new ClassWrapper(value, false, new byte[0]);
@@ -61,7 +61,7 @@ public class NameObfuscation implements INameObfuscationProcessor {
 
             JObfImpl.INSTANCE.buildHierarchy(cw, null);
         }
-        System.out.println("Finished building hierarchy");
+        JObf.log.info("Finished building hierarchy");
 
         long current = System.currentTimeMillis();
         JObf.log.info("Generating mappings...");
@@ -112,18 +112,18 @@ public class NameObfuscation implements INameObfuscationProcessor {
             classCounter.incrementAndGet();
         });
 
-        try {
-            FileOutputStream outStream = new FileOutputStream("mappings.txt");
-            PrintStream printStream = new PrintStream(outStream);
-
-            for (Map.Entry<String, String> stringStringEntry : mappings.entrySet()) {
-                printStream.println(stringStringEntry.getKey() + " -> " + stringStringEntry.getValue());
-            }
-
-            outStream.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            FileOutputStream outStream = new FileOutputStream("mappings.txt");
+//            PrintStream printStream = new PrintStream(outStream);
+//
+//            for (Map.Entry<String, String> stringStringEntry : mappings.entrySet()) {
+//                printStream.println(stringStringEntry.getKey() + " -> " + stringStringEntry.getValue());
+//            }
+//
+//            outStream.close();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
 
         JObf.log.info(String.format("Finished generating mappings (%dms)", (System.currentTimeMillis() - current)));
@@ -173,9 +173,7 @@ public class NameObfuscation implements INameObfuscationProcessor {
     }
 
     private boolean excluded(ClassWrapper classWrapper) {
-        boolean b = !JObfImpl.INSTANCE.script.remapClass(classWrapper.classNode);
-        System.out.println(classWrapper.originalName + "/ " + b);
-        return b;
+        return !JObfImpl.INSTANCE.script.remapClass(classWrapper.classNode);
     }
 
     private boolean excluded(String s) {

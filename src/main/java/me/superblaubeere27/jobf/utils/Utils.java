@@ -254,7 +254,6 @@ public class Utils {
         StringBuilder sb = new StringBuilder();
 
         for (String s1 : s.split("\n")) {
-            System.out.println(s1);
             if (s1.startsWith("Main-Class")) {
                 sb.append("Main-Class: ").append(main);
             } else {

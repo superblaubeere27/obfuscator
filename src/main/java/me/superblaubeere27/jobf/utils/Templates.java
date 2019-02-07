@@ -12,10 +12,7 @@ package me.superblaubeere27.jobf.utils;
 
 import com.google.common.io.ByteStreams;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,10 +47,14 @@ public class Templates {
     }
 
     private static InputStream getResourceAsStream(String resource) {
-        final InputStream in
+        InputStream in
                 = getContextClassLoader().getResourceAsStream(resource);
 
-        return in == null ? Templates.class.getResourceAsStream(resource) : in;
+        if (in == null) {
+            in = Templates.class.getResourceAsStream(resource);
+        }
+
+        return in == null ? new ByteArrayInputStream(new byte[0]) : in;
     }
 
     private static ClassLoader getContextClassLoader() {
