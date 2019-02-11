@@ -1,3 +1,9 @@
+---
+name: Bug Report
+about: 'Create a bug report'
+
+---
+
 # Bug Report
 ### Expected Behaviour
 Tell us what you wanted to do. If you think that everyone knows, what you expected (for example, if the program just crashed), you can skip this section
