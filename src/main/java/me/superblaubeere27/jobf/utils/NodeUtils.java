@@ -265,6 +265,28 @@ public class NodeUtils {
         return insns;
     }
 
+    public static AbstractInsnNode nullValueForType(Type returnType) {
+        switch (returnType.getSort()) {
+            case Type.BOOLEAN:
+            case Type.BYTE:
+            case Type.CHAR:
+            case Type.SHORT:
+            case Type.INT:
+                return new InsnNode(ICONST_0);
+            case Type.FLOAT:
+                return new InsnNode(FCONST_0);
+            case Type.DOUBLE:
+                return new InsnNode(DCONST_0);
+            case Type.LONG:
+                return new InsnNode(LCONST_0);
+            case Type.ARRAY:
+            case Type.OBJECT:
+                return new InsnNode(ACONST_NULL);
+            default:
+                throw new UnsupportedOperationException();
+        }
+    }
+
 //    public static int getTypeLoad(Type argumentType) {
 //        if (argumentType.getOpcode()) {
 //

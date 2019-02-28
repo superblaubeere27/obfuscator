@@ -20,6 +20,7 @@ import me.superblaubeere27.jobf.utils.values.BooleanValue;
 import me.superblaubeere27.jobf.utils.values.DeprecationLevel;
 import me.superblaubeere27.jobf.utils.values.EnabledValue;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
 import java.util.ArrayList;
@@ -205,14 +206,14 @@ public class FlowObfuscator implements IClassProcessor {
         return insnList;
     }
 
-    private static InsnList ifGoto(LabelNode label) {
+    private static InsnList ifGoto(LabelNode label, Type returnType) {
         InsnList insnList;
 
         int i = random.nextInt(14);
 
         insnList = generateIfGoto(i, label);
-        insnList.add(new InsnNode(Opcodes.ACONST_NULL));
-        insnList.add(new InsnNode(Opcodes.ATHROW));
+        if (returnType.getSize() != 0) insnList.add(NodeUtils.nullValueForType(returnType));
+        insnList.add(new InsnNode(returnType.getOpcode(Opcodes.IRETURN)));
 
         for (int j = 0; j < random.nextInt(2) + 1; j++)
             insnList = NumberObfuscationProcessor.obfuscateInsnList(insnList);
@@ -304,6 +305,7 @@ public class FlowObfuscator implements IClassProcessor {
             if (mangleSwitchesEnabled.getObject()) mangleSwitches(method);
             if (mangleComparisions.getObject())
                 toAdd.addAll(FloatingPointComparisionMangler.mangleComparisions(node, method));
+            JumpReplacer.process(node, method);
 
 
             for (AbstractInsnNode abstractInsnNode : method.instructions.toArray()) {
@@ -321,7 +323,7 @@ public class FlowObfuscator implements IClassProcessor {
                 if (replaceGoto.getObject() && abstractInsnNode instanceof JumpInsnNode && abstractInsnNode.getOpcode() == Opcodes.GOTO) {
                     JumpInsnNode insnNode = (JumpInsnNode) abstractInsnNode;
                     final InsnList insnList = new InsnList();
-                    insnList.add(ifGoto(insnNode.label));
+                    insnList.add(ifGoto(insnNode.label, Type.getReturnType(method.desc)));
                     method.instructions.insert(insnNode, insnList);
                     method.instructions.remove(insnNode);
                 }
