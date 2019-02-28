@@ -305,7 +305,7 @@ public class FlowObfuscator implements IClassProcessor {
             if (mangleSwitchesEnabled.getObject()) mangleSwitches(method);
             if (mangleComparisions.getObject())
                 toAdd.addAll(FloatingPointComparisionMangler.mangleComparisions(node, method));
-            JumpReplacer.process(node, method);
+            //JumpReplacer.process(node, method);
 
 
             for (AbstractInsnNode abstractInsnNode : method.instructions.toArray()) {
