@@ -495,7 +495,7 @@ public class JObfImpl {
                     JObf.log.info("Finishing...");
                     outJar.flush();
                     outJar.close();
-                    JObf.log.info(">>> Processing completed +" + (new File(config.getInput()).length() / ((float) new File(config.getOutput()).length()) * 100.0f) + "%");
+                    JObf.log.info(">>> Processing completed. If you found a bug / if the output is invalid please open an issue at https://github.com/superblaubeere27/obfuscator/issues");
                 } catch (Exception e) {
                     // ignore
                 }

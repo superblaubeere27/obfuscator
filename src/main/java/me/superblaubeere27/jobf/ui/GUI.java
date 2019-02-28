@@ -22,6 +22,8 @@ import org.fife.ui.rsyntaxtextarea.Theme;
 import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -248,8 +250,22 @@ public class GUI extends JFrame {
                     StringValue stringValue = (StringValue) value;
 
                     JTextField textBox = new JTextField(stringValue.getObject());
-                    textBox.addActionListener(event -> stringValue.setObject(textBox.getText()));
+                    textBox.getDocument().addDocumentListener(new DocumentListener() {
+                        @Override
+                        public void insertUpdate(DocumentEvent e) {
+                            stringValue.setObject(textBox.getText());
+                        }
 
+                        @Override
+                        public void removeUpdate(DocumentEvent e) {
+                            stringValue.setObject(textBox.getText());
+                        }
+
+                        @Override
+                        public void changedUpdate(DocumentEvent e) {
+                            stringValue.setObject(textBox.getText());
+                        }
+                    });
 
                     Color c = Utils.getColor(stringValue.getDeprecation());
 

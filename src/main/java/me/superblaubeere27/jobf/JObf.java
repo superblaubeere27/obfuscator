@@ -102,15 +102,15 @@ public class JObf {
         String updateCheckResult = checkForUpdate();
 
         OptionParser parser = new OptionParser();
-        parser.accepts("help").forHelp();
-        parser.accepts("version").forHelp();
-        parser.accepts("config").withOptionalArg().ofType(File.class);
         parser.accepts("jarIn").withRequiredArg().required();
         parser.accepts("jarOut").withRequiredArg();
+        parser.accepts("config").withOptionalArg().ofType(File.class);
         parser.accepts("cp").withOptionalArg().describedAs("ClassPath").ofType(File.class);
         parser.accepts("scriptFile").withOptionalArg().describedAs("[Not documented] JS script file").ofType(File.class);
-        parser.accepts("verbose").withOptionalArg();
         parser.accepts("threads").withOptionalArg().ofType(Integer.class).defaultsTo(Runtime.getRuntime().availableProcessors()).describedAs("Thread count; Please don't use more threads than you have cores. It might hang up your system");
+        parser.accepts("verbose").withOptionalArg();
+        parser.accepts("help").forHelp();
+        parser.accepts("version").forHelp();
 
 
         try {
@@ -209,7 +209,7 @@ public class JObf {
 
             if (!scriptContent.isEmpty()) config.setScript(scriptContent);
 
-            int threads = (Integer) options.valueOf("threads");
+            int threads = Math.max(1, (Integer) options.valueOf("threads"));
 
             if (threads > Runtime.getRuntime().availableProcessors()) {
                 log.warning("");
