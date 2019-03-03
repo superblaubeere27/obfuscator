@@ -38,6 +38,7 @@ import static org.objectweb.asm.Opcodes.*;
 
 public class Utils {
     private static final Random random = new Random();
+    private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
     public static ClassNode lookupClass(String name) {
         ClassWrapper a = JObfImpl.INSTANCE.getClassPath().get(name);
@@ -46,7 +47,6 @@ public class Utils {
 
         return JObfImpl.getClasses().get(name);
     }
-
 
     public static MethodNode getMethod(ClassNode cls, String name, String desc) {
         for (MethodNode method : cls.methods) {
@@ -149,8 +149,6 @@ public class Utils {
     public static boolean matchMethodNode(MethodInsnNode methodInsnNode, String s) {
         return s.equals(methodInsnNode.owner + "." + methodInsnNode.name + ":" + methodInsnNode.desc);
     }
-
-    private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
     public static String chooseDirectory(final File currFolder, final Component parent) {
         final JFileChooser chooser = new JFileChooser(currFolder);
@@ -309,5 +307,32 @@ public class Utils {
             return false;
         }
         return true;
+    }
+
+    public static String formatTime(long l) {
+        long hours = l / (1000 * 60 * 60);
+
+        l -= hours * 1000 * 60 * 60;
+
+        long minutes = l / (1000 * 60);
+
+        l -= minutes * 1000 * 60;
+
+        long seconds = l / (1000);
+
+        l -= seconds * 1000;
+
+        StringBuilder sb = new StringBuilder();
+
+        if (hours > 0)
+            sb.append(hours).append("h ");
+        else if (minutes > 0)
+            sb.append(minutes).append("min ");
+        else if (seconds > 0)
+            sb.append(seconds).append("s ");
+
+        sb.append(l).append("ms ");
+
+        return sb.toString();
     }
 }

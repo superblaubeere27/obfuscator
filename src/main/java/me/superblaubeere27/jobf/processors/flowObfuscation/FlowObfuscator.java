@@ -206,14 +206,20 @@ public class FlowObfuscator implements IClassProcessor {
         return insnList;
     }
 
-    private static InsnList ifGoto(LabelNode label, Type returnType) {
+    private static InsnList ifGoto(LabelNode label, MethodNode methodNode, Type returnType) {
         InsnList insnList;
 
         int i = random.nextInt(14);
 
         insnList = generateIfGoto(i, label);
-        if (returnType.getSize() != 0) insnList.add(NodeUtils.nullValueForType(returnType));
-        insnList.add(new InsnNode(returnType.getOpcode(Opcodes.IRETURN)));
+
+        if (methodNode.name.equals("<init>")) {
+            insnList.add(new InsnNode(Opcodes.ACONST_NULL));
+            insnList.add(new InsnNode(Opcodes.ATHROW));
+        } else {
+            if (returnType.getSize() != 0) insnList.add(NodeUtils.nullValueForType(returnType));
+            insnList.add(new InsnNode(returnType.getOpcode(Opcodes.IRETURN)));
+        }
 
         for (int j = 0; j < random.nextInt(2) + 1; j++)
             insnList = NumberObfuscationProcessor.obfuscateInsnList(insnList);
@@ -323,7 +329,7 @@ public class FlowObfuscator implements IClassProcessor {
                 if (replaceGoto.getObject() && abstractInsnNode instanceof JumpInsnNode && abstractInsnNode.getOpcode() == Opcodes.GOTO) {
                     JumpInsnNode insnNode = (JumpInsnNode) abstractInsnNode;
                     final InsnList insnList = new InsnList();
-                    insnList.add(ifGoto(insnNode.label, Type.getReturnType(method.desc)));
+                    insnList.add(ifGoto(insnNode.label, method, Type.getReturnType(method.desc)));
                     method.instructions.insert(insnNode, insnList);
                     method.instructions.remove(insnNode);
                 }

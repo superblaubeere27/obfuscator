@@ -246,6 +246,8 @@ public class JObfImpl {
             }
             setMainClass(null);
 
+            long startTime = System.currentTimeMillis();
+
             JObf.log.info("Reading input...");
 
             while (true) {
@@ -322,15 +324,21 @@ public class JObfImpl {
                 Packager.INSTANCE.init();
             }
 
+            JObf.log.info("... Finished after " + Utils.formatTime(System.currentTimeMillis() - startTime));
+
+            startTime = System.currentTimeMillis();
+
 
             JObf.log.info("Transforming with " + threadCount + " threads...");
 
             final LinkedList<Map.Entry<String, ClassNode>> classQueue = new LinkedList<>(classes.entrySet());
 
+            HashMap<String, byte[]> toWrite = new HashMap<>();
+
             List<Thread> threads = new ArrayList<>();
 
             for (int i = 0; i < threadCount; i++) {
-                ZipOutputStream finalOutJar = outJar;
+//                ZipOutputStream finalOutJar = outJar;
 
 
                 Thread t = new Thread(() -> {
@@ -407,10 +415,14 @@ public class JObfImpl {
                                 }
 
 
-                                synchronized (finalOutJar) {
-                                    ZipEntry newEntry = new ZipEntry(entryName);
-                                    finalOutJar.putNextEntry(newEntry);
-                                    finalOutJar.write(entryData);
+//                                synchronized (finalOutJar) {
+//                                    ZipEntry newEntry = new ZipEntry(entryName);
+//                                    finalOutJar.putNextEntry(newEntry);
+//                                    finalOutJar.write(entryData);
+//                                }
+
+                                synchronized (toWrite) {
+                                    toWrite.put(entryName, entryData);
                                 }
                                 //                    JObfImpl.log.log(Level.FINE, String.format("Processed %s (+%.2f KB)", entryName, (entryData.length - entryBuffer.size()) / 1024.0));
                             } catch (Exception e) {
@@ -449,6 +461,21 @@ public class JObfImpl {
                 Thread.sleep(100);
             }
 
+            JObf.log.info("... Finished after " + Utils.formatTime(System.currentTimeMillis() - startTime));
+
+            startTime = System.currentTimeMillis();
+
+            JObf.log.info("Writing classes...");
+
+            for (Map.Entry<String, byte[]> stringEntry : toWrite.entrySet()) {
+                ZipEntry newEntry = new ZipEntry(stringEntry.getKey());
+                outJar.putNextEntry(newEntry);
+                outJar.write(stringEntry.getValue());
+            }
+
+            JObf.log.info("... Finished after " + Utils.formatTime(System.currentTimeMillis() - startTime));
+
+            startTime = System.currentTimeMillis();
 
             JObf.log.info("Writing resources...");
 
@@ -473,13 +500,17 @@ public class JObfImpl {
                 outJar.write(entryData);
             }
 
+            JObf.log.info("... Finished after " + Utils.formatTime(System.currentTimeMillis() - startTime));
+
+            startTime = System.currentTimeMillis();
+
             if (Packager.INSTANCE.isEnabled()) {
                 JObf.log.info("Packaging...");
                 byte[] decryptorData = Packager.INSTANCE.generateEncryptionClass();
                 outJar.putNextEntry(new ZipEntry(Packager.INSTANCE.getDecryptionClassName() + ".class"));
                 outJar.write(decryptorData);
                 outJar.closeEntry();
-                JObf.log.info("Packaging finished.");
+                JObf.log.info("... Finished after " + Utils.formatTime(System.currentTimeMillis() - startTime));
             }
         } catch (InterruptedException ignored) {
         } finally {
