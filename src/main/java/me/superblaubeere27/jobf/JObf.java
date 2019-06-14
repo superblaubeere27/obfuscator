@@ -18,6 +18,7 @@ import me.superblaubeere27.jobf.processors.packager.Packager;
 import me.superblaubeere27.jobf.ui.GUI;
 import me.superblaubeere27.jobf.utils.ConsoleUtils;
 import me.superblaubeere27.jobf.utils.Templates;
+import me.superblaubeere27.jobf.utils.Utils;
 import me.superblaubeere27.jobf.utils.VersionComparator;
 import me.superblaubeere27.jobf.utils.values.ConfigManager;
 import me.superblaubeere27.jobf.utils.values.Configuration;
@@ -52,6 +53,7 @@ public class JObf {
         if (JObf.class.getPackage().getImplementationVersion() == null) {
             VERBOSE = true;
         }
+
 
         Class.forName(JObfImpl.class.getCanonicalName());
         JObf.log.setUseParentHandlers(false);
@@ -111,7 +113,6 @@ public class JObf {
         parser.accepts("verbose").withOptionalArg();
         parser.accepts("help").forHelp();
         parser.accepts("version").forHelp();
-
 
         try {
             OptionSet options = parser.parse(args);
@@ -257,7 +258,11 @@ public class JObf {
             System.out.println("Starting in GUI Mode");
 
             try {
-                UIManager.setLookAndFeel("com.bulenkov.darcula.DarculaLaf");
+                if (Utils.isWindows()) {
+                    UIManager.setLookAndFeel("com.bulenkov.darcula.DarculaLaf");
+                } else {
+                    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+                }
             } catch (Exception e1) {
                 try {
                     UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());

@@ -8,25 +8,13 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package me.superblaubeere27.jobf;
+package me.superblaubeere27.jobf.utils.scheduler;
 
-import me.superblaubeere27.jobf.processors.name.ClassWrapper;
+public interface ScheduledRunnable {
 
-public class ObfuscatorClassLoader extends ClassLoader {
-    public static ObfuscatorClassLoader INSTANCE = new ObfuscatorClassLoader();
+    /**
+     * @return Returns true if the thread is ready to exit
+     */
+    boolean runTick();
 
-    @Override
-    protected Class<?> findClass(String name) throws ClassNotFoundException {
-        String internalName = name.replace('.', '/');
-
-        if (JObfImpl.INSTANCE.getClassPath().containsKey(internalName)) {
-            ClassWrapper classWrapper = JObfImpl.INSTANCE.getClassPath().get(internalName);
-
-            if (classWrapper == null || classWrapper.originalClass == null) throw new ClassNotFoundException(name);
-
-            return defineClass(name, classWrapper.originalClass, 0, classWrapper.originalClass.length);
-        }
-
-        return super.findClass(name);
-    }
 }

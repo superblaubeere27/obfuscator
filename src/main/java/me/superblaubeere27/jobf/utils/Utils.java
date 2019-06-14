@@ -48,12 +48,20 @@ public class Utils {
         return JObfImpl.getClasses().get(name);
     }
 
-    public static MethodNode getMethod(ClassNode cls, String name, String desc) {
+    public static boolean isWindows() {
+        return System.getProperty("os.name").toLowerCase().contains("win");
+    }
+
+
+    public static MethodNode getMethod(ClassNode cls, String name, String desc, boolean parentClasses) {
         for (MethodNode method : cls.methods) {
             if (method.name.equals(name) && method.desc.equals(desc))
                 return method;
         }
-        return null;
+
+        ClassNode lookup = parentClasses ? lookupClass(cls.superName) : null;
+
+        return lookup == null || cls.name.equals("java/lang/Object") ? null : getMethod(lookup, name, desc, true);
     }
 
     public static FieldNode getField(ClassNode cls, String name) {
@@ -334,5 +342,33 @@ public class Utils {
         sb.append(l).append("ms ");
 
         return sb.toString();
+    }
+
+    public static Type getType(VarInsnNode abstractInsnNode) {
+        int offset;
+
+        if (abstractInsnNode.getOpcode() >= ISTORE && abstractInsnNode.getOpcode() <= ASTORE)
+            offset = abstractInsnNode.getOpcode() - ISTORE;
+        else if (abstractInsnNode.getOpcode() >= ILOAD && abstractInsnNode.getOpcode() <= ALOAD)
+            offset = abstractInsnNode.getOpcode() - ILOAD;
+        else if (abstractInsnNode.getOpcode() == RET)
+            throw new UnsupportedOperationException("RET is not supported");
+        else
+            throw new UnsupportedOperationException();
+
+        switch (offset) {
+            case 0:
+                return Type.INT_TYPE;
+            case LLOAD - ILOAD:
+                return Type.LONG_TYPE;
+            case FLOAD - ILOAD:
+                return Type.FLOAT_TYPE;
+            case DLOAD - ILOAD:
+                return Type.DOUBLE_TYPE;
+            case ALOAD - ILOAD:
+                return Type.getType("Ljava/lang/Object;");
+        }
+
+        throw new UnsupportedOperationException();
     }
 }

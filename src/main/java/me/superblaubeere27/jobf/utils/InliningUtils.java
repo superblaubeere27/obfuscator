@@ -30,17 +30,26 @@ public class InliningUtils {
         VariableProvider provider = new VariableProvider(target);
 
         HashMap<LabelNode, LabelNode> labelMap = new HashMap<>();
+        // Mapping of slots. KEY: Old, VALUE: New
         HashMap<Integer, Integer> slotMap = new HashMap<>();
+        // Mapping of arguments
+        HashMap<Integer, Integer> argumentMap = new HashMap<>();
 
         List<Type> argumentTypes = new ArrayList<>();
 
         if (!Modifier.isStatic(node.access)) {
             argumentTypes.add(Type.getType("L" + classNode.name + ";"));
         }
+
         argumentTypes.addAll(Arrays.asList(Type.getArgumentTypes(node.desc)));
 
-        for (int i = 0; i < argumentTypes.size(); i++) {
-            slotMap.put(i, provider.allocateVar());
+        int j = 0;
+
+        for (int i = 0; i < argumentTypes.size(); j += argumentTypes.get(i).getSize(), i++) {
+            int var = provider.allocateVar();
+
+            slotMap.put(j, var);
+            argumentMap.put(i, var);
         }
 
         // Search for labels and replace them
@@ -65,7 +74,7 @@ public class InliningUtils {
             int i;
 
             for (i = args; i > 0; i--) {
-                insns.add(new VarInsnNode(argumentTypes.get(i - 1).getOpcode(Opcodes.ISTORE), slotMap.get(i - 1)));
+                insns.add(new VarInsnNode(argumentTypes.get(i - 1).getOpcode(Opcodes.ISTORE), argumentMap.get(i - 1)));
             }
         }
 
@@ -94,6 +103,14 @@ public class InliningUtils {
                 continue;
             }
 
+            if (abstractInsnNode instanceof IincInsnNode) {
+                insns.add(new IincInsnNode(slotMap.get(((IincInsnNode) abstractInsnNode).var), ((IincInsnNode) abstractInsnNode).incr));
+                continue;
+            }
+
+            if (abstractInsnNode instanceof LineNumberNode || abstractInsnNode instanceof FrameNode)
+                continue;
+
             insns.add(abstractInsnNode.clone(labelMap));
 
         }
@@ -112,11 +129,15 @@ public class InliningUtils {
     }
 
     public static boolean canInlineMethod(ClassNode from, ClassNode clazz, MethodNode node) {
+//        if (node.name.equals("acceptsAll")) {
+//            System.out.println("Fuk");
+//        }
         if (node.name.startsWith("<")) return false;
         if (Modifier.isAbstract(node.access) || Modifier.isNative(node.access)) return false;
         if (Modifier.isInterface(clazz.access)) return false;
 
         if (node.instructions.size() < 2) return false;
+        if (node.tryCatchBlocks.size() > 0) return false;
 
         boolean ok = true;
 
@@ -137,9 +158,9 @@ public class InliningUtils {
                     break;
                 }
 
-                MethodNode lookupMethod = Utils.getMethod(lookup, ((MethodInsnNode) abstractInsnNode).name, ((MethodInsnNode) abstractInsnNode).desc);
+                MethodNode lookupMethod = Utils.getMethod(lookup, ((MethodInsnNode) abstractInsnNode).name, ((MethodInsnNode) abstractInsnNode).desc, true);
 
-                if (lookupMethod == null || !canAccessMethod(clazz, lookupMethod, lookup, lookupMethod)) {
+                if (lookupMethod == null || !canAccessMethod(from, lookupMethod, lookup, lookupMethod)) {
                     ok = false;
                     break;
                 }
@@ -158,6 +179,26 @@ public class InliningUtils {
                     ok = false;
                     break;
                 }
+            }
+            if (abstractInsnNode instanceof LdcInsnNode) {
+                LdcInsnNode ldc = (LdcInsnNode) abstractInsnNode;
+
+                if (ldc.cst instanceof Type) {
+                    if (((Type) ldc.cst).getSort() == Type.OBJECT) {
+                        ClassNode lookup = Utils.lookupClass(((Type) ldc.cst).getInternalName());
+
+                        if (lookup == null) {
+                            ok = false;
+                            break;
+                        }
+
+                        if (cantAccess(from, lookup)) {
+                            ok = false;
+                            break;
+                        }
+                    }
+                }
+
             }
         }
 

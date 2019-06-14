@@ -23,6 +23,8 @@ import me.superblaubeere27.jobf.processors.packager.Packager;
 import me.superblaubeere27.jobf.utils.ClassTree;
 import me.superblaubeere27.jobf.utils.MissingClassException;
 import me.superblaubeere27.jobf.utils.Utils;
+import me.superblaubeere27.jobf.utils.scheduler.ScheduledRunnable;
+import me.superblaubeere27.jobf.utils.scheduler.Scheduler;
 import me.superblaubeere27.jobf.utils.script.JObfScript;
 import me.superblaubeere27.jobf.utils.values.Configuration;
 import me.superblaubeere27.jobf.utils.values.ValueManager;
@@ -119,45 +121,104 @@ public class JObfImpl {
         }
     }
 
-    private Map<String, ClassWrapper> loadClasspathFile(File file) throws IOException {
-        Map<String, ClassWrapper> map = new HashMap<>();
-
+    //    private Map<String, ClassWrapper> loadClasspathFile(File file) throws IOException {
+//        Map<String, ClassWrapper> map = new HashMap<>();
+//
+//        ZipFile zipIn = new ZipFile(file);
+//        Enumeration<? extends ZipEntry> entries = zipIn.entries();
+//        while (entries.hasMoreElements()) {
+//            ZipEntry ent = entries.nextElement();
+//            if (ent.getName().endsWith(".class")) {
+//                byte[] bytes = ByteStreams.toByteArray(zipIn.getInputStream(ent));
+//
+//                ClassReader reader = new ClassReader(bytes);
+//                ClassNode node = new ClassNode();
+//                reader.accept(node, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+//                map.put(node.name, new ClassWrapper(node, true, bytes));
+//            }
+//        }
+//        zipIn.close();
+//
+//        return map;
+//    }
+    private List<byte[]> loadClasspathFile(File file) throws IOException {
         ZipFile zipIn = new ZipFile(file);
         Enumeration<? extends ZipEntry> entries = zipIn.entries();
+
+        boolean isJmod = file.getName().endsWith(".jmod");
+
+        List<byte[]> byteList = new ArrayList<>(zipIn.size());
+
         while (entries.hasMoreElements()) {
             ZipEntry ent = entries.nextElement();
-            if (ent.getName().endsWith(".class")) {
-                byte[] bytes = ByteStreams.toByteArray(zipIn.getInputStream(ent));
-
-                ClassReader reader = new ClassReader(bytes);
-                ClassNode node = new ClassNode();
-                reader.accept(node, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
-                map.put(node.name, new ClassWrapper(node, true, bytes));
+            if (ent.getName().endsWith(".class") && (!isJmod || !ent.getName().endsWith("module-info.class") && ent.getName().startsWith("classes/"))) {
+                byteList.add(ByteStreams.toByteArray(zipIn.getInputStream(ent)));
             }
         }
         zipIn.close();
 
-        return map;
+        return byteList;
     }
 
     private void loadClasspath() throws IOException {
         if (libraryFiles != null) {
             int i = 0;
+
+            LinkedList<byte[]> byteList = new LinkedList<>();
+
             for (File file : libraryFiles) {
                 if (file.isFile()) {
                     JObf.log.info("Loading " + file.getAbsolutePath() + " (" + (i++ * 100 / libraryFiles.size()) + "%)");
-                    classPath.putAll(loadClasspathFile(file));
+                    byteList.addAll(loadClasspathFile(file));
+//                    classPath.putAll(loadClasspathFile(file));
                 } else {
-                    Files.walk(file.toPath()).map(Path::toFile).filter(f -> f.getName().endsWith(".jar")).forEach(f -> {
+                    Files.walk(file.toPath()).map(Path::toFile).filter(f -> f.getName().endsWith(".jar") || f.getName().endsWith(".zip") || f.getName().endsWith(".jmod")).forEach(f -> {
+
                         try {
-                            classPath.putAll(loadClasspathFile(f));
+                            byteList.addAll(loadClasspathFile(f));
+//                            classPath.putAll(loadClasspathFile(f));
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
                     });
                 }
             }
+
+            JObf.log.info("Read " + byteList.size() + " class files to memory");
+            JObf.log.info("Parsing class files...");
+
+            ScheduledRunnable runnable = () -> {
+                Map<String, ClassWrapper> map = new HashMap<>();
+
+                while (true) {
+                    byte[] bytes;
+
+                    synchronized (byteList) {
+                        bytes = byteList.poll();
+                    }
+
+                    if (bytes == null) break;
+
+                    ClassReader reader = new ClassReader(bytes);
+                    ClassNode node = new ClassNode();
+                    reader.accept(node, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+                    map.put(node.name, new ClassWrapper(node, true, bytes));
+                }
+
+                synchronized (classPath) {
+                    classPath.putAll(map);
+                }
+
+                return true;
+            };
+
+            Scheduler scheduler = new Scheduler(runnable);
+
+            scheduler.run(threadCount);
+            scheduler.waitFor();
+
         }
+
         libraryClassnodes.addAll(classPath.values());
     }
 
@@ -229,6 +290,8 @@ public class JObfImpl {
 
         for (String s : config.getLibraries()) libraryFiles.add(new File(s));
 
+        long startTime = System.currentTimeMillis();
+
         try {
             JObf.log.info("Loading classpath...");
             loadClasspath();
@@ -246,7 +309,9 @@ public class JObfImpl {
             }
             setMainClass(null);
 
-            long startTime = System.currentTimeMillis();
+            JObf.log.info("... Finished after " + Utils.formatTime(System.currentTimeMillis() - startTime));
+
+            startTime = System.currentTimeMillis();
 
             JObf.log.info("Reading input...");
 
@@ -395,6 +460,7 @@ public class JObfImpl {
 
                                     entryData = writer.toByteArray();
                                 } catch (Throwable e) {
+                                    e.printStackTrace();
 //                                    if (e instanceof) {
 //
 //                                    }
@@ -402,6 +468,7 @@ public class JObfImpl {
                                             //                            | ModifiedClassWriter.COMPUTE_FRAMES
                                     );
                                     cn.accept(writer);
+
 
                                     entryData = writer.toByteArray();
                                 }
@@ -520,6 +587,8 @@ public class JObfImpl {
             libraryClassnodes.clear();
             files.clear();
             hierarchy.clear();
+
+            System.gc();
 
             if (outJar != null) {
                 try {

@@ -15,6 +15,7 @@ import me.superblaubeere27.jobf.JObf;
 import me.superblaubeere27.jobf.JObfImpl;
 import me.superblaubeere27.jobf.ProcessorCallback;
 import me.superblaubeere27.jobf.utils.InliningUtils;
+import me.superblaubeere27.jobf.utils.NodeUtils;
 import me.superblaubeere27.jobf.utils.Utils;
 import me.superblaubeere27.jobf.utils.values.DeprecationLevel;
 import me.superblaubeere27.jobf.utils.values.EnabledValue;
@@ -45,6 +46,8 @@ public class InlineProcessor implements IClassProcessor {
         boolean ok;
         int index = 0;
 
+        boolean found = false;
+
         do {
             ok = false;
             for (MethodNode method : node.methods) {
@@ -56,16 +59,16 @@ public class InlineProcessor implements IClassProcessor {
 
                         if (lookupClass == null) continue;
 
-                        MethodNode lookupMethod = Utils.getMethod(lookupClass, insnNode.name, insnNode.desc);
+                        MethodNode lookupMethod = Utils.getMethod(lookupClass, insnNode.name, insnNode.desc, false);
 
                         if (lookupMethod == null
-                                || (lookupMethod.instructions.size() > 100 && !lookupMethod.name.equals("approximiere_pi"))
+                                || (lookupMethod.instructions.size() > 100)
                                 || !InliningUtils.canInlineMethod(node, lookupClass, lookupMethod))
                             continue;
 
                         InsnList inline = InliningUtils.inline(lookupMethod, lookupClass, method);
-//                        inline.insertBefore(inline.getFirst(), NodeUtils.debugString("--- INLINE (" + lookupClass.name + "." + lookupMethod.name + lookupMethod.desc + ") ---"));
-//                        inline.add(NodeUtils.debugString("--- END ---"));
+                        inline.insertBefore(inline.getFirst(), NodeUtils.debugString("--- INLINE (" + lookupClass.name + "." + lookupMethod.name + lookupMethod.desc + ") ---"));
+                        inline.add(NodeUtils.debugString("--- END ---"));
 
 //                    System.out.println(NodeUtils.prettyprint(inline));
 
@@ -75,11 +78,14 @@ public class InlineProcessor implements IClassProcessor {
                         JObf.log.fine("Inlined method in " + node.name + "." + method.name + method.desc + "(" + lookupClass.name + "." + lookupMethod.name + lookupMethod.desc + ")");
 
                         ok = true;
+                        found = true;
                     }
                 }
             }
             index++;
         } while (ok && index <= maxPasses);
+
+        if (found) callback.setForceComputeFrames();
 
 //        System.out.println("Inlined " + inlined + " methods.");
 

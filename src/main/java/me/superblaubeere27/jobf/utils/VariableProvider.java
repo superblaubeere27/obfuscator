@@ -28,23 +28,23 @@ public class VariableProvider {
     public VariableProvider(MethodNode method) {
         this();
 
-        if (!Modifier.isStatic(method.access)) registerExisting(0);
+        if (!Modifier.isStatic(method.access)) registerExisting(0, Type.getType("Ljava/lang/Object;"));
 
         for (Type argumentType : Type.getArgumentTypes(method.desc)) {
-            registerExisting(argumentType.getSize() + max - 1);
+            registerExisting(argumentType.getSize() + max - 1, argumentType);
         }
 
         argumentSize = max;
 
         for (AbstractInsnNode abstractInsnNode : method.instructions.toArray()) {
             if (abstractInsnNode instanceof VarInsnNode) {
-                registerExisting(((VarInsnNode) abstractInsnNode).var);
+                registerExisting(((VarInsnNode) abstractInsnNode).var, Utils.getType((VarInsnNode) abstractInsnNode));
             }
         }
     }
 
-    private void registerExisting(int var) {
-        if (var >= max) max = var + 1;
+    private void registerExisting(int var, Type type) {
+        if (var >= max) max = var + type.getSize();
     }
 
     public boolean isUnallocated(int var) {

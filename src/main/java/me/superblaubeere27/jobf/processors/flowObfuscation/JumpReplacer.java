@@ -97,6 +97,7 @@ public class JumpReplacer {
                 insnList.add(new JumpInsnNode(Opcodes.IF_ICMPEQ, replacedLabelPair.first));
                 insnList.add(new JumpInsnNode(Opcodes.GOTO, replacedLabelPair.second));
             }
+
             if (returnType.getSize() != 0) insnList.add(NodeUtils.nullValueForType(returnType));
 
             insnList.add(new InsnNode(returnType.getOpcode(Opcodes.IRETURN)));
