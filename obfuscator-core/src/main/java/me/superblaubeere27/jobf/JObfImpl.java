@@ -21,6 +21,7 @@ import me.superblaubeere27.jobf.processors.optimizer.Optimizer;
 import me.superblaubeere27.jobf.processors.packager.Packager;
 import me.superblaubeere27.jobf.utils.ClassTree;
 import me.superblaubeere27.jobf.utils.MissingClassException;
+import me.superblaubeere27.jobf.utils.NameUtils;
 import me.superblaubeere27.jobf.utils.Utils;
 import me.superblaubeere27.jobf.utils.scheduler.ScheduledRunnable;
 import me.superblaubeere27.jobf.utils.scheduler.Scheduler;
@@ -101,7 +102,7 @@ public class JObfImpl {
                 tree.parentClasses.add(classWrapper.classNode.superName);
                 ClassWrapper superClass = classPath.get(classWrapper.classNode.superName);
                 if (superClass == null)
-                    throw new MissingClassException(classWrapper.classNode.superName + " is missing in the classPath.");
+                    throw new MissingClassException(classWrapper.classNode.superName + " (referenced in " + classWrapper.classNode.name + ") is missing in the classPath.");
                 buildHierarchy(superClass, classWrapper);
             }
             if (classWrapper.classNode.interfaces != null && !classWrapper.classNode.interfaces.isEmpty()) {
@@ -109,7 +110,7 @@ public class JObfImpl {
                     tree.parentClasses.add(s);
                     ClassWrapper interfaceClass = classPath.get(s);
                     if (interfaceClass == null)
-                        throw new MissingClassException(s + " is missing in the classPath.");
+                        throw new MissingClassException(s + " (referenced in " + classWrapper.classNode.name + ") is missing in the classPath.");
                     buildHierarchy(interfaceClass, classWrapper);
                 }
             }
@@ -282,6 +283,9 @@ public class JObfImpl {
         classPath = new HashMap<>();
         files = new HashMap<>();
         hierarchy = new HashMap<>();
+
+        NameUtils.applySettings(settings);
+        NameUtils.setup();
 
         try {
             script = new JObfScript(config.getScript() == null ? "" : config.getScript());
@@ -594,6 +598,8 @@ public class JObfImpl {
             libraryClassnodes.clear();
             files.clear();
             hierarchy.clear();
+
+            NameUtils.cleanUp();
 
             System.gc();
 

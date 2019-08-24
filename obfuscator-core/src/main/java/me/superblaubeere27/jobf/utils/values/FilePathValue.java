@@ -8,28 +8,14 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package me.superblaubeere27.jobf;
+package me.superblaubeere27.jobf.utils.values;
 
-import me.superblaubeere27.jobf.utils.values.BooleanValue;
-import me.superblaubeere27.jobf.utils.values.DeprecationLevel;
-import me.superblaubeere27.jobf.utils.values.FilePathValue;
-
-public class JObfSettings {
-    private static final String PROCESSOR_NAME = "General Settings";
-
-    private BooleanValue useCustomDictionary = new BooleanValue(PROCESSOR_NAME, "Custom dictionary", DeprecationLevel.GOOD, false);
-    private FilePathValue classNameDictionary = new FilePathValue(PROCESSOR_NAME, "Class Name dictionary", DeprecationLevel.GOOD, "");
-    private FilePathValue nameDictionary = new FilePathValue(PROCESSOR_NAME, "Name dictionary", DeprecationLevel.GOOD, "");
-
-    public BooleanValue getUseCustomDictionary() {
-        return useCustomDictionary;
+public class FilePathValue extends StringValue {
+    public FilePathValue(String owner, String name, DeprecationLevel deprecated, String object) {
+        super(owner, name, deprecated, object);
     }
 
-    public FilePathValue getClassNameDictionary() {
-        return classNameDictionary;
-    }
-
-    public FilePathValue getNameDictionary() {
-        return nameDictionary;
+    public FilePathValue(String owner, String name, String description, DeprecationLevel deprecation, String object) {
+        super(owner, name, description, deprecation, object, 1);
     }
 }

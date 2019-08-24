@@ -10,11 +10,14 @@
 
 package me.superblaubeere27.jobf.utils;
 
+import com.google.common.io.Files;
+import me.superblaubeere27.jobf.JObfSettings;
 import org.objectweb.asm.tree.ClassNode;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 public class NameUtils {
     /**
@@ -31,16 +34,19 @@ public class NameUtils {
     private static Random random = new Random();
     private static int METHODS = 0;
     private static int FIELDS = 0;
+    private static boolean usingCustomDictionary = false;
+    private static List<String> classNames = new ArrayList<>();
+    private static List<String> names = new ArrayList<>();
 
     @SuppressWarnings("SameParameterValue")
     private static int randInt(int min, int max) {
         return random.nextInt(max - min) + min;
     }
 
-    public static void setup(final String classCharacters, final String methodCharacters, final String fieldCharacters, boolean iL) {
+    public static void setup() {
         USED_METHODNAMES.clear();
         USED_FIELDNAMES.clear();
-
+        packageMap.clear();
     }
 
     public static String generateSpaceString(int length) {
@@ -63,8 +69,16 @@ public class NameUtils {
         int id = packageMap.get(packageName);
         packageMap.put(packageName, id + 1);
 
-        return Utils.toIl(id);
+        return getName(classNames, id);
 //        return ClassNameGenerator.className(Utils.random(2, 5));
+    }
+
+    private static String getName(List<String> dictionary, int id) {
+        if (usingCustomDictionary && id < dictionary.size()) {
+            return dictionary.get(id);
+        }
+
+        return Utils.toIl(id);
     }
 
     /**
@@ -96,14 +110,16 @@ public class NameUtils {
 ////        System.out.println("0 " + className + "/" + desc + ":" + descMap);
 //
 //        int i = descMap.get(desc);
+//
 //        descMap.put(desc, i + 1);
-
-//        System.out.println(USED_METHODNAMES);
-
-//        System.out.println(className + "/" + desc + ":" + descMap);
-
-//        return Utils.toIl(i);
-        return Utils.toIl(METHODS++);
+//
+////        System.out.println(USED_METHODNAMES);
+//
+//
+//        String name = getName(names, i);
+//
+//        return name;
+        return getName(names, METHODS++);
     }
 
     public static String generateMethodName(final ClassNode classNode, String desc) {
@@ -118,8 +134,8 @@ public class NameUtils {
 //        int i = USED_FIELDNAMES.get(className);
 //        USED_FIELDNAMES.put(className, i + 1);
 //
-//        return Utils.toIl(i);
-        return Utils.toIl(FIELDS++);
+//        return getName(names, i);
+        return getName(names, FIELDS++);
     }
 
     public static String generateFieldName(final ClassNode classNode) {
@@ -161,5 +177,26 @@ public class NameUtils {
         if (lin == 0) throw new IllegalArgumentException("Illegal class name");
 
         return lin == -1 ? "" : in.substring(0, lin);
+    }
+
+    public static void applySettings(JObfSettings settings) {
+        usingCustomDictionary = settings.getUseCustomDictionary().getObject();
+
+        try {
+            if (usingCustomDictionary) {
+                classNames = Files.readLines(new File(settings.getClassNameDictionary().getObject()), StandardCharsets.UTF_8);
+                names = Files.readLines(new File(settings.getNameDictionary().getObject()), StandardCharsets.UTF_8);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to load names: " + e.getLocalizedMessage(), e);
+        }
+    }
+
+    public static void cleanUp() {
+        classNames.clear();
+        classNames = new ArrayList<>();
+
+        names.clear();
+        names = new ArrayList<>();
     }
 }

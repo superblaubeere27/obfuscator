@@ -89,7 +89,7 @@ public class NameObfuscation implements INameObfuscationProcessor {
         long current = System.currentTimeMillis();
         JObf.log.info("Generating mappings...");
 
-        NameUtils.setup("", "", "", true);
+        NameUtils.setup();
 
         AtomicInteger classCounter = new AtomicInteger();
 

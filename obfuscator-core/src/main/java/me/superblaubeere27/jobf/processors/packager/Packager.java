@@ -100,7 +100,7 @@ public class Packager {
     }
 
     public byte[] generateEncryptionClass() {
-        NameUtils.setup("", "", "", true);
+        NameUtils.setup();
 
         String keyFieldName = NameUtils.generateFieldName(decryptionClassName);
         String xorMethodName = NameUtils.generateMethodName(decryptionClassName, "([B[B)[B");
