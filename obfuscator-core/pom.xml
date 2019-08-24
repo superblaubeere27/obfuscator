@@ -27,6 +27,10 @@
             <id>ASM</id>
             <url>https://repository.ow2.org/nexus/service/local/repositories/releases/content</url>
         </repository>
+        <repository>
+            <id>project-repo</id>
+            <url>file://${parent.basedir}/libs</url>
+        </repository>
     </repositories>
 
     <dependencies>
@@ -94,11 +98,11 @@
             <scope>test</scope>
         </dependency>
         <!--Copyright JetBrains 2000 - 2019-->
-        <dependency>
-            <groupId>com.bulenkov</groupId>
-            <artifactId>darcula</artifactId>
-            <version>1.0.0</version>
-        </dependency>
+        <!--        <dependency>-->
+        <!--            <groupId>com.bulenkov</groupId>-->
+        <!--            <artifactId>darcula</artifactId>-->
+        <!--            <version>1.0.0</version>-->
+        <!--        </dependency>-->
         <dependency>
             <groupId>me.superblaubeere27</groupId>
             <artifactId>obfuscator-annotations</artifactId>
