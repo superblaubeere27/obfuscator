@@ -27,10 +27,6 @@
             <id>ASM</id>
             <url>https://repository.ow2.org/nexus/service/local/repositories/releases/content</url>
         </repository>
-        <repository>
-            <id>project-repo</id>
-            <url>file://${project.basedir}/libs</url>
-        </repository>
     </repositories>
 
     <dependencies>

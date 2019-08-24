@@ -18,6 +18,12 @@
         <asm.version>7.0</asm.version>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>project-repo</id>
+            <url>file://${project.basedir}/libs</url>
+        </repository>
+    </repositories>
 
     <modules>
         <module>obfuscator-annotations</module>
