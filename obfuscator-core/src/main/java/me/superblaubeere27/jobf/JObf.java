@@ -208,6 +208,8 @@ public class JObf {
             config.setInput(jarIn);
             config.setOutput(jarOut);
 
+            config.getLibraries().addAll(libraries);
+
             if (!scriptContent.isEmpty()) config.setScript(scriptContent);
 
             int threads = Math.max(1, (Integer) options.valueOf("threads"));
