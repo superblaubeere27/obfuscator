@@ -18,6 +18,7 @@
         <asm.version>7.0</asm.version>
     </properties>
 
+
     <modules>
         <module>obfuscator-annotations</module>
         <module>obfuscator-core</module>
