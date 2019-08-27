@@ -27,6 +27,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -101,7 +102,7 @@ public class JObf {
             }
         });
 
-        String updateCheckResult = checkForUpdate();
+        String version = checkForUpdate();
 
         OptionParser parser = new OptionParser();
         parser.accepts("jarIn").withRequiredArg().required();
@@ -132,35 +133,17 @@ public class JObf {
 
             String jarIn = (String) options.valueOf("jarIn");
             String jarOut = (String) options.valueOf("jarOut");
+            File configPath = options.has("config") ? (File) options.valueOf("config") : null;
 
+            String scriptContent = "";
 
-            log("        _      __                     _             \n" +
-                    "       | |    / _|                   | |            \n" +
-                    "   ___ | |__ | |_ _   _ ___  ___ __ _| |_ ___  _ __ \n" +
-                    "  / _ \\| '_ \\|  _| | | / __|/ __/ _` | __/ _ \\| '__|\n" +
-                    " | (_) | |_) | | | |_| \\__ \\ (_| (_| | || (_) | |   \n" +
-                    "  \\___/|_.__/|_|  \\__,_|___/\\___\\__,_|\\__\\___/|_|   \n" +
-                    "   " + SHORT_VERSION + (updateCheckResult == null ? " (LATEST)" : " (OUTDATED)"));
-            log("");
-
-
-            if (updateCheckResult != null) {
-                log(ConsoleUtils.formatBox("Update available", true, Arrays.asList(
-                        "An update is available: v" + updateCheckResult,
-                        "(Current version: " + SHORT_VERSION + ")",
-                        "The latest version can be downloaded at",
-                        "https://github.com/superblaubeere27/obfuscator/releases/latest"
-                )));
+            if (options.has("scriptFile")) {
+                scriptContent = new String(Files.readAllBytes(((File) options.valueOf("scriptFile")).toPath()), StandardCharsets.UTF_8);
             }
 
-            log("");
-
-            log(ConsoleUtils.formatBox("Configuration", false, Arrays.asList(
-                    "Input:      " + jarIn,
-                    "Output:     " + jarOut,
-                    "Config:     " + options.valueOf("config")
-            )));
-
+            boolean outdated = version != null;
+            boolean embedded = false;
+            int threads = Math.max(1, (Integer) options.valueOf("threads"));
 
             List<String> libraries = new ArrayList<>();
 
@@ -170,73 +153,7 @@ public class JObf {
                 }
             }
 
-            String scriptContent = "";
-
-            if (options.has("scriptFile")) {
-                scriptContent = new String(Files.readAllBytes(((File) options.valueOf("scriptFile")).toPath()), StandardCharsets.UTF_8);
-            }
-
-            JObfImpl impl = new JObfImpl();
-
-            Configuration config = new Configuration(jarIn, jarOut, scriptContent, libraries);
-
-            if (options.has("config")) {
-                File configFile = (File) options.valueOf("config");
-
-                if (!configFile.exists()) {
-                    System.err.println("Config file doesn't exist");
-                    return;
-                }
-
-                config = ConfigManager.loadConfig(new String(ByteStreams.toByteArray(new FileInputStream(configFile)), StandardCharsets.UTF_8));
-            } else {
-                log.warning("");
-                log.warning(ConsoleUtils.formatBox("WARNING", true, Arrays.asList(
-                        "You didn't specify a configuration, so the ",
-                        "obfuscator is using the default configuration.",
-                        " ",
-                        "This might cause the output jar to be invalid.",
-                        "If you want to create a config, please start the",
-                        "obfuscator in GUI Mode (run it without cli args).",
-                        "",
-                        "The program will resume in 2 sec"
-                )));
-                log.warning("");
-                Thread.sleep(2000);
-            }
-
-            config.setInput(jarIn);
-            config.setOutput(jarOut);
-
-            config.getLibraries().addAll(libraries);
-
-            if (!scriptContent.isEmpty()) config.setScript(scriptContent);
-
-            int threads = Math.max(1, (Integer) options.valueOf("threads"));
-
-            if (threads > Runtime.getRuntime().availableProcessors()) {
-                log.warning("");
-                log.warning(ConsoleUtils.formatBox("WARNING", true, Arrays.asList(
-                        "You selected more threads than your cpu has cores.",
-                        "",
-                        "I would strongly advise against it because",
-                        "it WILL make the obfuscation slower and also",
-                        "might hang up your system. " + threads + " threads > " + Runtime.getRuntime().availableProcessors() + " cores",
-                        "",
-                        "The program will resume in 10s. Please think about your decision"
-                )));
-                Thread.sleep(10000);
-            }
-
-            impl.setThreadCount(threads);
-
-            try {
-                impl.processJar(config);
-            } catch (Exception e) {
-                System.err.println("ERROR: " + e.getMessage());
-                e.printStackTrace();
-                System.exit(1);
-            }
+            runObfuscator(jarIn, jarOut, configPath, libraries, outdated, embedded, version, scriptContent, threads);
         } catch (OptionException e) {
             System.err.println("ERROR: " + e.getMessage() + " (Tip: try --help and even if you specified a config you have to specify an input and output jar)");
             e.printStackTrace();
@@ -277,13 +194,105 @@ public class JObf {
 
             Packager.INSTANCE.isEnabled();
 
-            gui = new GUI(updateCheckResult);
+            gui = new GUI(version);
             //#endif
 //            e.printStackTrace();
 //            parser.printHelpOn(System.out);
 
 //            e.printStackTrace();
         }
+    }
+
+    public static boolean runEmbedded(String jarIn, String jarOut, File configPath, List<String> libraries, String scriptContent) throws IOException, InterruptedException {
+        return runObfuscator(jarIn, jarOut, configPath, libraries, false, true, null, scriptContent, Runtime.getRuntime().availableProcessors());
+    }
+    
+    private static boolean runObfuscator(String jarIn, String jarOut, File configPath, List<String> libraries, boolean outdated, boolean embedded, String version, String scriptContent, int threads) throws IOException, InterruptedException {
+        if (outdated) {
+            log(ConsoleUtils.formatBox("Update available", true, Arrays.asList(
+                    "An update is available: v" + version,
+                    "(Current version: " + SHORT_VERSION + ")",
+                    "The latest version can be downloaded at",
+                    "https://github.com/superblaubeere27/obfuscator/releases/latest"
+            )));
+        }
+
+        log("        _      __                     _             \n" +
+                "       | |    / _|                   | |            \n" +
+                "   ___ | |__ | |_ _   _ ___  ___ __ _| |_ ___  _ __ \n" +
+                "  / _ \\| '_ \\|  _| | | / __|/ __/ _` | __/ _ \\| '__|\n" +
+                " | (_) | |_) | | | |_| \\__ \\ (_| (_| | || (_) | |   \n" +
+                "  \\___/|_.__/|_|  \\__,_|___/\\___\\__,_|\\__\\___/|_|   \n" +
+                "   " + SHORT_VERSION + (embedded ? " (EMBEDDED)" : outdated ? " (OUTDATED)" : " (LATEST)"));
+        log("");
+
+        log("");
+
+
+        log(ConsoleUtils.formatBox("Configuration", false, Arrays.asList(
+                "Input:      " + jarIn,
+                "Output:     " + jarOut,
+                "Config:     " + (configPath != null ? configPath.getPath() : "")
+        )));
+
+        JObfImpl impl = new JObfImpl();
+
+        Configuration config = new Configuration(jarIn, jarOut, scriptContent, libraries);
+
+        if (configPath != null) {
+            if (!configPath.exists()) {
+                System.err.println("Config file doesn't exist");
+                return false;
+            }
+
+            config = ConfigManager.loadConfig(new String(ByteStreams.toByteArray(new FileInputStream(configPath)), StandardCharsets.UTF_8));
+        } else {
+            log.warning("");
+            log.warning(ConsoleUtils.formatBox("WARNING", true, Arrays.asList(
+                    "You didn't specify a configuration, so the ",
+                    "obfuscator is using the default configuration.",
+                    " ",
+                    "This might cause the output jar to be invalid.",
+                    "If you want to create a config, please start the",
+                    "obfuscator in GUI Mode (run it without cli args).",
+                    "",
+                    "The program will resume in 2 sec"
+            )));
+            log.warning("");
+            Thread.sleep(2000);
+        }
+
+        config.setInput(jarIn);
+        config.setOutput(jarOut);
+
+        config.getLibraries().addAll(libraries);
+
+        if (!scriptContent.isEmpty()) config.setScript(scriptContent);
+
+        if (threads > Runtime.getRuntime().availableProcessors()) {
+            log.warning("");
+            log.warning(ConsoleUtils.formatBox("WARNING", true, Arrays.asList(
+                    "You selected more threads than your cpu has cores.",
+                    "",
+                    "I would strongly advise against it because",
+                    "it WILL make the obfuscation slower and also",
+                    "might hang up your system. " + threads + " threads > " + Runtime.getRuntime().availableProcessors() + " cores",
+                    "",
+                    "The program will resume in 10s. Please think about your decision"
+            )));
+            Thread.sleep(10000);
+        }
+
+        impl.setThreadCount(threads);
+
+        try {
+            impl.processJar(config);
+        } catch (Exception e) {
+            System.err.println("ERROR: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+        return true;
     }
 
     /**
