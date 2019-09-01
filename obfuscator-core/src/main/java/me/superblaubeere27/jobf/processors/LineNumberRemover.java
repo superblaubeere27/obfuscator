@@ -49,7 +49,7 @@ public class LineNumberRemover implements IClassTransformer {
     private BooleanValue renameValues = new BooleanValue(PROCESSOR_NAME, "Rename local variables", DeprecationLevel.GOOD, true);
     private BooleanValue removeLineNumbers = new BooleanValue(PROCESSOR_NAME, "Remove Line Numbers", DeprecationLevel.GOOD, true);
     private BooleanValue removeDebugNames = new BooleanValue(PROCESSOR_NAME, "Remove Debug Names", DeprecationLevel.GOOD, true);
-    private BooleanValue addLocalVariables = new BooleanValue(PROCESSOR_NAME, "Add Local Variables", "Adds random local variables which wrong types. Might break some decompilers", DeprecationLevel.GOOD, true);
+    private BooleanValue addLocalVariables = new BooleanValue(PROCESSOR_NAME, "Add Local Variables", "Adds random local variables with wrong types. Might break some decompilers", DeprecationLevel.GOOD, true);
     private StringValue newSourceFileName = new StringValue(PROCESSOR_NAME, "New SourceFile Name", DeprecationLevel.GOOD, "");
 
     public LineNumberRemover(JObfImpl inst) {
@@ -114,7 +114,7 @@ public class LineNumberRemover implements IClassTransformer {
 
         inst.setWorkDone();
     }
-
+	
     @Override
     public ObfuscationTransformer getType() {
         return ObfuscationTransformer.LINE_NUMBER_REMOVER;
