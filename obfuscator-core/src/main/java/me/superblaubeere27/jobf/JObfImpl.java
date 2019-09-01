@@ -463,8 +463,9 @@ public class JObfImpl {
                                     JObf.log.log(Level.FINE, String.format("[%s] (%s/%s), Writing (computeMode = %s) %s", Thread.currentThread().getName(), processed, classes.size(), mode, entryName));
 
                                     ModifiedClassWriter writer = new ModifiedClassWriter(
-//                                            computeMode
-                                            ModifiedClassWriter.COMPUTE_FRAMES
+                                            mode
+//                                            ModifiedClassWriter.COMPUTE_MAXS |
+//                                            ModifiedClassWriter.COMPUTE_FRAMES
                                     );
                                     cn.accept(writer);
 
