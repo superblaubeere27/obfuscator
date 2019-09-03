@@ -138,7 +138,7 @@ public class NameObfuscation implements INameObfuscationProcessor {
                 });
 
                 if (!excluded && nativeMethodsFound.get()) {
-                    JObf.log.info("Automacially excluded " + classWrapper.originalName + " because it has native methods in it.");
+                    JObf.log.info("Automatically excluded " + classWrapper.originalName + " because it has native methods in it.");
                 }
 
                 if (excluded || nativeMethodsFound.get()) return;
