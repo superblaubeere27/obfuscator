@@ -227,7 +227,7 @@ public class NameObfuscation implements INameObfuscationProcessor {
     }
 
     private Pattern compileExcludePattern(String s) {
-        StringBuilder sb = new StringBuilder();
+        /*StringBuilder sb = new StringBuilder();
         // s.replace('.', '/').replace("**", ".*").replace("*", "[^/]*")
 
         char[] chars = s.toCharArray();
@@ -235,21 +235,22 @@ public class NameObfuscation implements INameObfuscationProcessor {
         for (int i = 0; i < chars.length; i++) {
             char c = chars[i];
 
-           /* if (c == '*') {
+            if (c == '*') {
                 if (chars.length - 1 != i && chars[i + 1] == '*') {
                     sb.append(".*");
                     i++;
                 } else {
                     sb.append("[^/]*");
                 }
-            } else*/ if (c == '.' && chars[i+1] == '*') {
+            } else if (c == '.' && chars[i+1] == '*') {
                 sb.append('/');
             } else {
                 sb.append(c);
             }
         }
 
-        return Pattern.compile(sb.toString());
+        return Pattern.compile(sb.toString());*/
+        return Pattern.compile(s);
     }
 
     private boolean isClassExcluded(ClassWrapper classWrapper) {

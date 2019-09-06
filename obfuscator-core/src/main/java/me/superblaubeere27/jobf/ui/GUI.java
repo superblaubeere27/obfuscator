@@ -107,9 +107,7 @@ public class GUI extends JFrame {
                 }
             }
         });
-        clearLogButton.addActionListener(e -> {
-            logArea.setText("");
-        });
+        clearLogButton.addActionListener(e -> { logArea.setText(""); });
         loadButton.addActionListener(e -> {
             String name = Utils.chooseFile(null, GUI.this, new JObfFileFilter());
             if (name != null) {
@@ -538,7 +536,7 @@ public class GUI extends JFrame {
        
         clearLogButton = new JButton();
         clearLogButton.setText("Clear");
-        panel9.add(clearLogButton, new GridConstraints(1, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        panel9.add(clearLogButton, new GridConstraints(1, 1, 1, 1, GridConstraints.ANCHOR_EAST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         
         obfuscateButton = new JButton();
         this.$$$loadButtonText$$$(obfuscateButton, ResourceBundle.getBundle("strings").getString("obfuscate"));
