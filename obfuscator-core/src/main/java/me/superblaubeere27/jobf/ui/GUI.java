@@ -63,6 +63,7 @@ public class GUI extends JFrame {
     private JSlider threadsSlider;
     private JLabel threadsLabel;
     private JCheckBox verbose;
+    private JButton clearLogButton;
     private List<String> libraryList = new ArrayList<>();
 
     {
@@ -105,6 +106,9 @@ public class GUI extends JFrame {
                     JOptionPane.showMessageDialog(GUI.this, e1.toString(), "ERROR", JOptionPane.ERROR_MESSAGE);
                 }
             }
+        });
+        clearLogButton.addActionListener(e -> {
+            logArea.setText("");
         });
         loadButton.addActionListener(e -> {
             String name = Utils.chooseFile(null, GUI.this, new JObfFileFilter());
@@ -531,6 +535,11 @@ public class GUI extends JFrame {
         verbose.setSelected(false);
         verbose.setText("Verbose");
         panel9.add(verbose, new GridConstraints(1, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+       
+        clearLogButton = new JButton();
+        clearLogButton.setText("Clear");
+        panel9.add(clearLogButton, new GridConstraints(1, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        
         obfuscateButton = new JButton();
         this.$$$loadButtonText$$$(obfuscateButton, ResourceBundle.getBundle("strings").getString("obfuscate"));
         panel1.add(obfuscateButton, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
