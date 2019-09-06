@@ -235,14 +235,14 @@ public class NameObfuscation implements INameObfuscationProcessor {
         for (int i = 0; i < chars.length; i++) {
             char c = chars[i];
 
-            if (c == '*') {
+           /* if (c == '*') {
                 if (chars.length - 1 != i && chars[i + 1] == '*') {
                     sb.append(".*");
                     i++;
                 } else {
                     sb.append("[^/]*");
                 }
-            } else if (c == '.') {
+            } else*/ if (c == '.' && chars[i+1] == '*') {
                 sb.append('/');
             } else {
                 sb.append(c);
@@ -254,8 +254,11 @@ public class NameObfuscation implements INameObfuscationProcessor {
 
     private boolean isClassExcluded(ClassWrapper classWrapper) {
         String str = classWrapper.classNode.name;
-
+	
+		JObf.log.info("-----------------\nTexting class exclude for class '" + str + "'");
         for (Pattern excludedMethodsPattern : excludedClassesPatterns) {
+			JObf.log.info("Regex: " + excludedMethodsPattern.pattern());
+			JObf.log.info("Result: " + excludedMethodsPattern.matcher(str).matches());
             if (excludedMethodsPattern.matcher(str).matches()) {
                 return true;
             }
