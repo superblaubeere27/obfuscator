@@ -36,32 +36,32 @@ import java.util.regex.Pattern;
 
 public class NameObfuscation implements INameObfuscationProcessor {
     private static String PROCESSOR_NAME = "NameObfuscation";
-    
+
     private EnabledValue enabled = new EnabledValue(PROCESSOR_NAME, DeprecationLevel.OK, false);
     private StringValue excludedClasses = new StringValue(PROCESSOR_NAME, "Excluded classes", null, DeprecationLevel.GOOD, "me.name.Class\nme.name.*\nio.netty.**", 5);
     private StringValue excludedMethods = new StringValue(PROCESSOR_NAME, "Excluded methods", null, DeprecationLevel.GOOD, "me.name.Class.method\nme.name.Class**\nme.name.Class.*", 5);
     private StringValue excludedFields = new StringValue(PROCESSOR_NAME, "Excluded fields", null, DeprecationLevel.GOOD, "me.name.Class.field\nme.name.Class.*\nme.name.**", 5);
-    
+
     private String repackageName = "obfuscator";
     private boolean repackage = false;
-    
+
     private List<Pattern> excludedClassesPatterns = new ArrayList<>();
     private List<Pattern> excludedMethodsPatterns = new ArrayList<>();
     private List<Pattern> excludedFieldsPatterns = new ArrayList<>();
-    
+
     private void putMapping(HashMap<String, String> mappings, String str, String str1) {
         mappings.put(str, str1);
     }
-    
+
     @Override
     public void transformPost(JObfImpl inst, HashMap<String, ClassNode> nodes) {
         if (!enabled.getObject()) return;
-        
+
         try {
             HashMap<String, String> mappings = new HashMap<>();
-            
+
             List<ClassWrapper> classWrappers = new ArrayList<>();
-            
+
             for (String s : excludedClasses.getObject().split("\n")) {
                 excludedClassesPatterns.add(compileExcludePattern(s));
             }
@@ -71,34 +71,34 @@ public class NameObfuscation implements INameObfuscationProcessor {
             for (String s : excludedFields.getObject().split("\n")) {
                 excludedFieldsPatterns.add(compileExcludePattern(s));
             }
-            
+
             JObf.log.info("Building Hierarchy...");
-            
+
             for (ClassNode value : nodes.values()) {
                 ClassWrapper cw = new ClassWrapper(value, false, new byte[0]);
-                
+
                 classWrappers.add(cw);
-                
+
                 JObfImpl.INSTANCE.buildHierarchy(cw, null);
             }
-            
+
             JObf.log.info("Finished building hierarchy");
-            
+
             long current = System.currentTimeMillis();
             JObf.log.info("Generating mappings...");
-            
+
             NameUtils.setup();
-            
+
             AtomicInteger classCounter = new AtomicInteger();
-            
+
             classWrappers.forEach(classWrapper -> {
                 boolean excluded = this.isClassExcluded(classWrapper);
                 AtomicBoolean builtHierarchy = new AtomicBoolean(false);
-                
+
                 for (MethodWrapper method : classWrapper.methods) {
                     if ((Modifier.isPrivate(method.methodNode.access) || Modifier.isProtected(method.methodNode.access)) && excluded)
                         continue;
-                    
+
                     method.methodNode.access &= ~Opcodes.ACC_PRIVATE;
                     method.methodNode.access &= ~Opcodes.ACC_PROTECTED;
                     method.methodNode.access |= Opcodes.ACC_PUBLIC;
@@ -111,17 +111,17 @@ public class NameObfuscation implements INameObfuscationProcessor {
                     field.fieldNode.access &= ~Opcodes.ACC_PROTECTED;
                     field.fieldNode.access |= Opcodes.ACC_PUBLIC;
                 }
-                
+
                 AtomicBoolean nativeMethodsFound = new AtomicBoolean(false);
-                
+
                 classWrapper.methods.stream().filter(methodWrapper ->
-                    !methodWrapper.methodNode.name.equals("main") && !methodWrapper.methodNode.name.equals("premain")
-                        && !methodWrapper.methodNode.name.startsWith("<")).forEach(methodWrapper -> {
-                    
+                        !methodWrapper.methodNode.name.equals("main") && !methodWrapper.methodNode.name.equals("premain")
+                                && !methodWrapper.methodNode.name.startsWith("<")).forEach(methodWrapper -> {
+
                     if (Modifier.isNative(methodWrapper.methodNode.access)) {
                         nativeMethodsFound.set(true);
                     }
-                    
+
                     try {
                         if (canRenameMethodTree(mappings, new HashSet<>(), methodWrapper, classWrapper.originalName)) {
                             this.renameMethodTree(mappings, new HashSet<>(), methodWrapper, classWrapper.originalName, NameUtils.generateMethodName(classWrapper.originalName, methodWrapper.originalDescription));
@@ -130,25 +130,25 @@ public class NameObfuscation implements INameObfuscationProcessor {
                         e.printStackTrace();
                     }
                 });
-                
+
                 classWrapper.fields.forEach(fieldWrapper -> {
                     if (canRenameFieldTree(mappings, new HashSet<>(), fieldWrapper, classWrapper.originalName)) {
                         this.renameFieldTree(new HashSet<>(), fieldWrapper, classWrapper.originalName, NameUtils.generateFieldName(classWrapper.originalName), mappings);
                     }
                 });
-                
+
                 if (!excluded && nativeMethodsFound.get()) {
-                    JObf.log.info("Automacially excluded " + classWrapper.originalName + " because it has native methods in it.");
+                    JObf.log.info("Automatically excluded " + classWrapper.originalName + " because it has native methods in it.");
                 }
-                
+
                 if (excluded || nativeMethodsFound.get()) return;
-                
+
                 classWrapper.classNode.access &= ~Opcodes.ACC_PRIVATE;
                 classWrapper.classNode.access &= ~Opcodes.ACC_PROTECTED;
                 classWrapper.classNode.access |= Opcodes.ACC_PUBLIC;
-                
+
                 putMapping(mappings, classWrapper.originalName, (repackage)
-                    ? repackageName + '/' + NameUtils.generateClassName() : NameUtils.generateClassName());
+                        ? repackageName + '/' + NameUtils.generateClassName() : NameUtils.generateClassName());
                 classCounter.incrementAndGet();
             });
 
@@ -164,18 +164,18 @@ public class NameObfuscation implements INameObfuscationProcessor {
 //        } catch (IOException e) {
 //            e.printStackTrace();
 //        }
-            
-            
+
+
             JObf.log.info(String.format("Finished generating mappings (%dms)", (System.currentTimeMillis() - current)));
             JObf.log.info("Applying mappings...");
-            
+
             current = System.currentTimeMillis();
-            
+
             Remapper simpleRemapper = new MemberRemapper(mappings);
-            
+
             for (ClassWrapper classWrapper : classWrappers) {
                 ClassNode classNode = classWrapper.classNode;
-                
+
                 ClassNode copy = new ClassNode();
                 classNode.accept(new ClassRemapper(copy, simpleRemapper));
                 for (int i = 0; i < copy.methods.size(); i++) {
@@ -195,46 +195,46 @@ public class NameObfuscation implements INameObfuscationProcessor {
                         }
                     }*/
                 }
-                
+
                 if (copy.fields != null) {
                     for (int i = 0; i < copy.fields.size(); i++) {
                         classWrapper.fields.get(i).fieldNode = copy.fields.get(i);
                     }
                 }
-                
+
                 classWrapper.classNode = copy;
                 JObfImpl.classes.remove(classWrapper.originalName + ".class");
                 JObfImpl.classes.put(classWrapper.classNode.name + ".class", classWrapper.classNode);
                 //            JObfImpl.INSTANCE.getClassPath().put();
                 //            this.getClasses().put(classWrapper.classNode.name, classWrapper);
-                
+
                 ClassWriter writer = new ClassWriter(0);
-                
+
                 classWrapper.classNode.accept(writer);
-                
+
                 classWrapper.originalClass = writer.toByteArray();
-                
+
                 JObfImpl.INSTANCE.getClassPath().put(classWrapper.classNode.name, classWrapper);
             }
-            
+
             JObf.log.info(String.format("Finished applying mappings (%dms)", (System.currentTimeMillis() - current)));
         } finally {
             excludedClassesPatterns.clear();
             excludedMethodsPatterns.clear();
             excludedFieldsPatterns.clear();
         }
-        
+
     }
-    
+
     private Pattern compileExcludePattern(String s) {
-        StringBuilder sb = new StringBuilder();
+        /*StringBuilder sb = new StringBuilder();
         // s.replace('.', '/').replace("**", ".*").replace("*", "[^/]*")
-        
+
         char[] chars = s.toCharArray();
-        
+
         for (int i = 0; i < chars.length; i++) {
             char c = chars[i];
-            
+
             if (c == '*') {
                 if (chars.length - 1 != i && chars[i + 1] == '*') {
                     sb.append(".*");
@@ -242,72 +242,76 @@ public class NameObfuscation implements INameObfuscationProcessor {
                 } else {
                     sb.append("[^/]*");
                 }
-            } else if (c == '.') {
+            } else if (c == '.' && chars[i+1] == '*') {
                 sb.append('/');
             } else {
                 sb.append(c);
             }
         }
-        
-        return Pattern.compile(sb.toString());
+
+        return Pattern.compile(sb.toString());*/
+        return Pattern.compile(s);
     }
-    
+
     private boolean isClassExcluded(ClassWrapper classWrapper) {
         String str = classWrapper.classNode.name;
-        
+	
+		JObf.log.info("-----------------\nTexting class exclude for class '" + str + "'");
         for (Pattern excludedMethodsPattern : excludedClassesPatterns) {
+			JObf.log.info("Regex: " + excludedMethodsPattern.pattern());
+			JObf.log.info("Result: " + excludedMethodsPattern.matcher(str).matches());
             if (excludedMethodsPattern.matcher(str).matches()) {
                 return true;
             }
         }
-        
+
         return false;
     }
-    
+
     private boolean isMethodExcluded(String owner, MethodWrapper methodWrapper) {
         String str = owner + '.' + methodWrapper.originalName;
-        
+
         for (Pattern excludedMethodsPattern : excludedMethodsPatterns) {
             if (excludedMethodsPattern.matcher(str).matches()) {
                 return true;
             }
         }
-        
+
         return false;
     }
-    
+
     private boolean isFieldExcluded(String owner, FieldWrapper methodWrapper) {
         String str = owner + '.' + methodWrapper.originalName;
-        
+
         for (Pattern excludedMethodsPattern : excludedFieldsPatterns) {
             if (excludedMethodsPattern.matcher(str).matches()) {
                 return true;
             }
         }
-        
+
         return false;
     }
-    
+
     private boolean canRenameMethodTree(HashMap<String, String> mappings, HashSet<ClassTree> visited, MethodWrapper methodWrapper, String owner) {
         if (isMethodExcluded(owner, methodWrapper)) {
             return false;
         }
-        
+
         ClassTree tree = JObfImpl.INSTANCE.getTree(owner);
         if (!visited.contains(tree)) {
             visited.add(tree);
-            
+
             if (Modifier.isNative(methodWrapper.methodNode.access)) {
                 return false;
             }
-            
+
             if (mappings.containsKey(owner + '.' + methodWrapper.originalName + methodWrapper.originalDescription)) {
                 return true;
             }
             if (!methodWrapper.owner.originalName.equals(owner) && tree.classWrapper.libraryNode) {
                 for (MethodNode mn : tree.classWrapper.classNode.methods) {
                     if (mn.name.equals(methodWrapper.originalName)
-                        & mn.desc.equals(methodWrapper.originalDescription)) {
+                            & mn.desc.equals(methodWrapper.originalDescription)) {
                         return false;
                     }
                 }
@@ -323,14 +327,14 @@ public class NameObfuscation implements INameObfuscationProcessor {
                 }
             }
         }
-        
+
         return true;
     }
-    
+
     private void renameMethodTree(HashMap<String, String> mappings, HashSet<ClassTree> visited, MethodWrapper MethodWrapper, String className,
                                   String newName) {
         ClassTree tree = JObfImpl.INSTANCE.getTree(className);
-        
+
         if (!tree.classWrapper.libraryNode && !visited.contains(tree)) {
             putMapping(mappings, className + '.' + MethodWrapper.originalName + MethodWrapper.originalDescription, newName);
             visited.add(tree);
@@ -342,12 +346,12 @@ public class NameObfuscation implements INameObfuscationProcessor {
             }
         }
     }
-    
+
     private boolean canRenameFieldTree(HashMap<String, String> mappings, HashSet<ClassTree> visited, FieldWrapper fieldWrapper, String owner) {
         if (isFieldExcluded(owner, fieldWrapper)) {
             return false;
         }
-        
+
         ClassTree tree = JObfImpl.INSTANCE.getTree(owner);
         if (!visited.contains(tree)) {
             visited.add(tree);
@@ -371,13 +375,13 @@ public class NameObfuscation implements INameObfuscationProcessor {
                 }
             }
         }
-        
+
         return true;
     }
-    
+
     private void renameFieldTree(HashSet<ClassTree> visited, FieldWrapper fieldWrapper, String owner, String newName, HashMap<String, String> mappings) {
         ClassTree tree = JObfImpl.INSTANCE.getTree(owner);
-        
+
         if (!tree.classWrapper.libraryNode && !visited.contains(tree)) {
             putMapping(mappings, owner + '.' + fieldWrapper.originalName + '.' + fieldWrapper.originalDescription, newName);
             visited.add(tree);
