@@ -216,7 +216,7 @@ public class Utils {
             case GOOD:
                 return null;
             case OK:
-				return Color.yellow;
+                return Color.yellow;
             case BAD:
                 return Color.red;
             default:
