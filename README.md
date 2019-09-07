@@ -1,5 +1,19 @@
 # Obfuscator [![Build Status](https://travis-ci.org/superblaubeere27/obfuscator.svg?branch=master)](https://travis-ci.org/superblaubeere27/obfuscator) [![Join the chat at https://gitter.im/superblaubeere27/obfuscator](https://badges.gitter.im/superblaubeere27/obfuscator.svg)](https://gitter.im/superblaubeere27/obfuscator?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Donate](https://img.shields.io/badge/patreon-donate-green.svg)](http://patreon.com/superblaubeere27)
 
+A Java bytecode obfuscator supporting
+* Flow Obfuscation
+* Line Number Removal
+* Number Obfuscation
+* Optimisation
+* Name Obfuscation (Classes, methods and fields) with custom dictionaries
+* Deobfuscator crasher
+* String Encryption
+* Inner Class Removal
+* HWID Locking
+* Invoke Dynamic
+* Reference Proxy
+* Member Shuffling & Hiding
+
 Feel free to join my discord server: [![Discord Chat](https://img.shields.io/discord/468320443682521089.svg)](https://discord.gg/zQmAChK)  
 
 
