@@ -191,7 +191,7 @@ public class NameUtils {
     }
 
     public static void cleanUp() {
-        customDictionary.clear();
+        //customDictionary.clear(); Removed, throws UnsupportedOperationException
         customDictionary = new ArrayList<>();
     }
 }
