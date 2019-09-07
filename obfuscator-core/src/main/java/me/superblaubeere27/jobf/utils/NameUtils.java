@@ -37,6 +37,7 @@ public class NameUtils {
     private static boolean usingCustomDictionary = false;
     private static List<String> classNames = new ArrayList<>();
     private static List<String> names = new ArrayList<>();
+    private static List<String> defaultDic = new ArrayList<>();
 
     @SuppressWarnings("SameParameterValue")
     private static int randInt(int min, int max) {
@@ -74,8 +75,12 @@ public class NameUtils {
     }
 
     private static String getName(List<String> dictionary, int id) {
-        if (usingCustomDictionary && id < dictionary.size()) {
+        if (usingCustomDictionary && id < dictionary.size())
+        {
             return dictionary.get(id);
+        }
+        else if(id < defaultDic.size()) {
+            return defaultDic.get(id);
         }
 
         return Utils.toIl(id);
@@ -181,14 +186,13 @@ public class NameUtils {
 
     public static void applySettings(JObfSettings settings) {
         usingCustomDictionary = settings.getUseCustomDictionary().getObject();
-
-        try {
-            if (usingCustomDictionary) {
-                classNames = Files.readLines(new File(settings.getClassNameDictionary().getObject()), StandardCharsets.UTF_8);
-                names = Files.readLines(new File(settings.getNameDictionary().getObject()), StandardCharsets.UTF_8);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to load names: " + e.getLocalizedMessage(), e);
+        if (usingCustomDictionary)
+        {
+            classNames = new Permutations(settings.getClassNameDictionary().getObject().replace("\n", ",").replace(", ", ",").split(","), 50).get();
+            names = new Permutations(settings.getClassNameDictionary().getObject().replace("\n", ",").replace(", ", ",").split(","), 50).get();
+        }
+        else {
+            defaultDic = new Permutations(new String[]{"1", "l"}, 50).get();
         }
     }
 
@@ -198,5 +202,8 @@ public class NameUtils {
 
         names.clear();
         names = new ArrayList<>();
+        
+        defaultDic.clear();
+        defaultDic = new ArrayList<>();
     }
 }
