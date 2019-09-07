@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
+import java.util.logging.Level;
 
 public class NameObfuscation implements INameObfuscationProcessor {
     private static String PROCESSOR_NAME = "NameObfuscation";
