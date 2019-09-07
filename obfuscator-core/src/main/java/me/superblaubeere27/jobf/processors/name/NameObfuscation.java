@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
+import java.util.logging.Level;
 
 public class NameObfuscation implements INameObfuscationProcessor {
     private static String PROCESSOR_NAME = "NameObfuscation";
@@ -255,10 +256,10 @@ public class NameObfuscation implements INameObfuscationProcessor {
     private boolean isClassExcluded(ClassWrapper classWrapper) {
         String str = classWrapper.classNode.name;
 	
-		JObf.log.info("-----------------\nTexting class exclude for class '" + str + "'");
+	JObf.log.log(Level.FINE, "-----------------\nTexting class exclude for class '" + str + "'");
         for (Pattern excludedMethodsPattern : excludedClassesPatterns) {
-			JObf.log.info("Regex: " + excludedMethodsPattern.pattern());
-			JObf.log.info("Result: " + excludedMethodsPattern.matcher(str).matches());
+	    JObf.log.log(Level.FINE, "Regex: " + excludedMethodsPattern.pattern());
+	    JObf.log.log(Level.FINE, "Result: " + excludedMethodsPattern.matcher(str).matches());
             if (excludedMethodsPattern.matcher(str).matches()) {
                 return true;
             }
