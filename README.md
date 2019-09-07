@@ -55,37 +55,118 @@ public class HelloWorld {
 
 `--jarOut <output>` Output JAR
 
-`--package` Encrypts every class
+`--config <configFile>` Config File
 
-`--packagerMainClass <main-class>` Required if --package is specified. Specify the MainClass which the packager should execute
+`--cp <classPath>` Class Path
 
-`--mode <mode>` 0 = Normal, 1 = Aggressive (Might not work)
+`--scriptFile <scriptFile>` A JS file to script certain parts of the obfuscation
 
-`--log <file>` Log file
+`--threads` Sets the number of threads the obfuscator should use
 
-`--hwid [<hwid>]` Enabled Hardware ID bound. If `hwid` isn't provided it will use the HWID of your system.
+`--verbose` Sets logging to verbose mode
 
 ### Examples
+
 `java -jar obfuscator.jar --jarIn helloWorld.jar --jarOut helloWorld-obf.jar`
 
-`java -jar obfuscator.jar --mode 1 --jarIn helloWorld.jar --jarOut helloWorld-obf.jar`
-Aggressive
+`java -jar obfuscator.jar --jarIn helloWorld.jar --jarOut helloWorld-obf.jar --config obfConfig`
 
-`java -jar obfuscator.jar --package --packagerMainClass HelloWorld --jarIn helloWorld.jar --jarOut helloWorld-obf.jar`
-Packager
+### Example Config
 
-`java -jar obfuscator.jar --hwid 5614147245AD3553FE5B7FE0259BC886 --jarIn helloWorld.jar --jarOut helloWorld-obf.jar`
-HWID bound
-
-`java -jar obfuscator.jar --package --packagerMainClass HelloWorld --hwid 5614147245AD3553FE5B7FE0259BC886 --jarIn helloWorld.jar --jarOut helloWorld-obf.jar`
-HWID bound + Packager
-
-`java -jar obfuscator.jar --mode 1 --package --packagerMainClass HelloWorld --jarIn helloWorld.jar --jarOut helloWorld-obf.jar`
-Aggresive + Packager
-
-## NameObfuscation
-
-USE PROGUARD!!!
+```
+{
+  "input": "D:\\Computing\\HelloWorld\\out\\artifacts\\HelloWorld_jar\\HelloWorld.jar",
+  "output": "D:\\Computing\\HelloWorld\\out\\artifacts\\HelloWorld_jar\\HelloWorld-obf.jar",
+  "script": "function isRemappingEnabledForClass(node) {\n    return true;\n}\nfunction isObfuscatorEnabledForClass(node) {\n    return true;\n}",
+  "libraries": [
+    "C:\\Program Files\\Java\\jre1.8.0_211\\lib",
+    "D:\\Computing\\backdoored_old\\dependencies",
+    "D:\\Computing\\backdoored\\libs"
+  ],
+  "Crasher": {
+    "Enabled": false,
+    "Invalid Signatures": true,
+    "Empty annotation spam": true
+  },
+  "InvokeDynamic": {
+    "Enabled": true
+  },
+  "HWIDPRotection": {
+    "Enabled": false,
+    "HWID": ""
+  },
+  "Optimizer": {
+    "Enabled": true,
+    "Replace String.equals()": true,
+    "Replace String.equalsIgnoreCase()": true,
+    "Optimize static string calls": true
+  },
+  "LineNumberRemover": {
+    "Enabled": true,
+    "Rename local variables": true,
+    "Remove Line Numbers": true,
+    "Remove Debug Names": true,
+    "Add Local Variables": true,
+    "New SourceFile Name": ""
+  },
+  "StringEncryption": {
+    "Enabled": true,
+    "HideStrings": true,
+    "AES": true
+  },
+  "NumberObfuscation": {
+    "Enabled": true,
+    "Extract to Array": true,
+    "Obfuscate Zero": true,
+    "Shift": false,
+    "And": false,
+    "Multiple Instructions": true
+  },
+  "ReferenceProxy": {
+    "Enabled": false
+  },
+  "ShuffleMembers": {
+    "Enabled": true
+  },
+  "InnerClassRemover": {
+    "Enabled": true,
+    "Remap": true,
+    "Remove Metadata": true
+  },
+  "NameObfuscation": {
+    "Enabled": true,
+    "Excluded classes": "HelloWorld",
+    "Excluded methods": "",
+    "Excluded fields": ""
+  },
+  "General Settings": {
+    "Custom dictionary": true,
+    "Name dictionary": "hello,world"
+  },
+  "Packager": {
+    "Enabled": false,
+    "Use MainClass from the JAR manifest": true,
+    "Main class": "HelloWorld"
+  },
+  "FlowObfuscator": {
+    "Enabled": true,
+    "Mangle Comparisons": true,
+    "Replace GOTO": true,
+    "Replace If": true,
+    "Bad POP": true,
+    "Bad Concat": true,
+    "Mangle Switches": false,
+    "Mangle Return": false,
+    "Mangle Local Variables": false
+  },
+  "HideMembers": {
+    "Enabled": true
+  },
+  "Inlining": {
+    "Enabled": false
+  }
+}
+```
 
 ## Credits
 - MCInjector (FFixer base)
