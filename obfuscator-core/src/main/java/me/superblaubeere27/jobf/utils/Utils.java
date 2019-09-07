@@ -262,7 +262,6 @@ public class Utils {
 		StringBuilder builder = new StringBuilder();
 		for(char c: integerRepresentation.toCharArray())
 		{
-			System.out.println(Integer.parseInt(c + ""));
 			builder.append(dictionary.get(Integer.parseInt(c + "")));
 		}
 		return builder.toString();
