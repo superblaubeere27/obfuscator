@@ -255,6 +255,18 @@ public class Utils {
     public static String toIl(int i) {
         return Integer.toBinaryString(i).replace('0', 'I').replace('1', 'l');
     }
+    
+    public static String randomise(int i, java.util.List<String> dictionary)
+	{
+		String integerRepresentation = Integer.toUnsignedString(i, dictionary.size());
+		StringBuilder builder = new StringBuilder();
+		for(char c: integerRepresentation.toCharArray())
+		{
+			System.out.println(Integer.parseInt(c + ""));
+			builder.append(dictionary.get(Integer.parseInt(c + "")));
+		}
+		return builder.toString();
+	}
 
     public static String replaceMainClass(String s, String main) {
         StringBuilder sb = new StringBuilder();

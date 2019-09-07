@@ -35,8 +35,8 @@ public class NameUtils {
     private static int METHODS = 0;
     private static int FIELDS = 0;
     private static boolean usingCustomDictionary = false;
-    private static List<String> names = new ArrayList<>();
-    private static List<String> defaultDic = new ArrayList<>();
+    private static List<String> defaultDictionary = Arrays.asList("1", "l");
+    private static List<String> customDictionary = new ArrayList<>();
 
     @SuppressWarnings("SameParameterValue")
     private static int randInt(int min, int max) {
@@ -69,20 +69,17 @@ public class NameUtils {
         int id = packageMap.get(packageName);
         packageMap.put(packageName, id + 1);
 
-        return getName(names, id);
+        return getName(id);
 //        return ClassNameGenerator.className(Utils.random(2, 5));
     }
 
-    private static String getName(List<String> dictionary, int id) {
-        if (usingCustomDictionary && id < dictionary.size())
+    private static String getName(int id) {
+        if (usingCustomDictionary)
         {
-            return dictionary.get(id);
-        }
-        else if(id < defaultDic.size()) {
-            return defaultDic.get(id);
+            return Utils.randomise(id, customDictionary);
         }
 
-        return Utils.toIl(id);
+        return Utils.randomise(id, defaultDictionary);
     }
 
     /**
@@ -123,7 +120,7 @@ public class NameUtils {
 //        String name = getName(names, i);
 //
 //        return name;
-        return getName(names, METHODS++);
+        return getName(METHODS++);
     }
 
     public static String generateMethodName(final ClassNode classNode, String desc) {
@@ -139,7 +136,7 @@ public class NameUtils {
 //        USED_FIELDNAMES.put(className, i + 1);
 //
 //        return getName(names, i);
-        return getName(names, FIELDS++);
+        return getName(FIELDS++);
     }
 
     public static String generateFieldName(final ClassNode classNode) {
@@ -185,33 +182,16 @@ public class NameUtils {
 
     public static void applySettings(JObfSettings settings) {
         usingCustomDictionary = settings.getUseCustomDictionary().getObject();
-        if (usingCustomDictionary)
-        {
-            String[] userDictionary = settings.getNameDictionary().getObject().replace("\n", ",").replace(", ", ",").split(",");
-            // we will generate enough names for 500 classes
-            // so if n is the size of the dictionary
-            // and k is the max string length
-            // then we want n^k to be = 500
-            // n is given by the user
-            int n = userDictionary.length;
-            // k is chosen by us based on n^x = 500, logn(n^k)=logn(500), k = logn(500)
-            int k = (int) (Math.log(20) / Math.log(n));
-            System.out.println(userDictionary);
-            System.out.println("K: " + n + " " + Math.log(500) + " " + Math.log(n) + " " + k);
-            
-            names = new Permutations(userDictionary, k).get();
-        }
-        else {
-            System.out.println("K: 20");
-            defaultDic = new Permutations(new String[]{"1", "l"}, 20).get();
+        
+        if (usingCustomDictionary) {
+            // If the user is using a custom dictionary then we will split their input into a comma delimited list of strings to be added to the dictionary used for name generation
+            String[] dic = settings.getNameDictionary().getObject().replace("\n", ",").replace(", ", ",").split(",");
+            customDictionary = Arrays.asList(dic);
         }
     }
 
     public static void cleanUp() {
-        names.clear();
-        names = new ArrayList<>();
-        
-        defaultDic.clear();
-        defaultDic = new ArrayList<>();
+        customDictionary.clear();
+        customDictionary = new ArrayList<>();
     }
 }
