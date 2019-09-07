@@ -148,7 +148,7 @@ public class NameUtils {
     }
 
     public static String generateLocalVariableName() {
-        return Utils.toIl(localVars--);
+        return Utils.randomise(localVars--, usingCustomDictionary ? customDictionary : defaultDictionary);
     }
 
     private static int getLenght() {
