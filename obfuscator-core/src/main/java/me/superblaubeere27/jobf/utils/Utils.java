@@ -256,6 +256,19 @@ public class Utils {
         return Integer.toBinaryString(i).replace('0', 'I').replace('1', 'l');
     }
     
+    /*
+     * Converts a string to a new string based on a dictionary. Not actually randomised, but based on the provided
+     * @Param int i
+     * value, which will always generate a string unique to that integer.
+     *
+     * How does it work? It converts an integer in base 10 into another base based on the lenth of the dictionary.
+     * For example, if the dictionary was ["hello", "goodbye"] the length of the dictionary is 2, and it will be
+     * converted to its base2 equivalent (binary). The number 10 would become 1010. Now we go through each of the
+     * digits in this number and convert it to the string at that index in the dictionary. The first 1, well index
+     * 1 in the array is goodbye so we will convert it into goodbye and etc until we get to "goodbyehellogoodbyehello".
+     * This is the outputted string.
+     * @Author cookiedragon234
+     */
     public static String randomise(int i, java.util.List<String> dictionary)
 	{
 		String integerRepresentation = Integer.toUnsignedString(i, dictionary.size());
