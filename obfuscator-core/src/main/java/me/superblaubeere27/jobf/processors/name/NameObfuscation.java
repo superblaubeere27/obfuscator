@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
+import java.util.logging.Level;
 
 public class NameObfuscation implements INameObfuscationProcessor {
     private static String PROCESSOR_NAME = "NameObfuscation";
@@ -138,7 +139,7 @@ public class NameObfuscation implements INameObfuscationProcessor {
                 });
 
                 if (!excluded && nativeMethodsFound.get()) {
-                    JObf.log.info("Automacially excluded " + classWrapper.originalName + " because it has native methods in it.");
+                    JObf.log.info("Automatically excluded " + classWrapper.originalName + " because it has native methods in it.");
                 }
 
                 if (excluded || nativeMethodsFound.get()) return;
@@ -254,8 +255,11 @@ public class NameObfuscation implements INameObfuscationProcessor {
 
     private boolean isClassExcluded(ClassWrapper classWrapper) {
         String str = classWrapper.classNode.name;
-
+	
+	JObf.log.log(Level.FINE, "-----------------\nTexting class exclude for class '" + str + "'");
         for (Pattern excludedMethodsPattern : excludedClassesPatterns) {
+	    JObf.log.log(Level.FINE, "Regex: " + excludedMethodsPattern.pattern());
+	    JObf.log.log(Level.FINE, "Result: " + excludedMethodsPattern.matcher(str).matches());
             if (excludedMethodsPattern.matcher(str).matches()) {
                 return true;
             }
