@@ -19,15 +19,10 @@ public class JObfSettings {
     private static final String PROCESSOR_NAME = "General Settings";
 
     private BooleanValue useCustomDictionary = new BooleanValue(PROCESSOR_NAME, "Custom dictionary", DeprecationLevel.GOOD, false);
-    private StringValue classNameDictionary = new StringValue(PROCESSOR_NAME, "Class Name dictionary", DeprecationLevel.GOOD, "");
     private StringValue nameDictionary = new StringValue(PROCESSOR_NAME, "Name dictionary", DeprecationLevel.GOOD, "");
 
     public BooleanValue getUseCustomDictionary() {
         return useCustomDictionary;
-    }
-
-    public StringValue getClassNameDictionary() {
-        return classNameDictionary;
     }
 
     public StringValue getNameDictionary() {

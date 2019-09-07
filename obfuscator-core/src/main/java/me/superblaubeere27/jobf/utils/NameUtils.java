@@ -35,7 +35,6 @@ public class NameUtils {
     private static int METHODS = 0;
     private static int FIELDS = 0;
     private static boolean usingCustomDictionary = false;
-    private static List<String> classNames = new ArrayList<>();
     private static List<String> names = new ArrayList<>();
     private static List<String> defaultDic = new ArrayList<>();
 
@@ -70,7 +69,7 @@ public class NameUtils {
         int id = packageMap.get(packageName);
         packageMap.put(packageName, id + 1);
 
-        return getName(classNames, id);
+        return getName(names, id);
 //        return ClassNameGenerator.className(Utils.random(2, 5));
     }
 
@@ -188,8 +187,17 @@ public class NameUtils {
         usingCustomDictionary = settings.getUseCustomDictionary().getObject();
         if (usingCustomDictionary)
         {
-            classNames = new Permutations(settings.getClassNameDictionary().getObject().replace("\n", ",").replace(", ", ",").split(","), 50).get();
-            names = new Permutations(settings.getClassNameDictionary().getObject().replace("\n", ",").replace(", ", ",").split(","), 50).get();
+            String[] userDictionary = settings.getNameDictionary().getObject().replace("\n", ",").replace(", ", ",").split(",");
+            // we will generate enough names for 500 classes
+            // so if n is the size of the dictionary
+            // and k is the max string length
+            // then we want n^k to be = 500
+            // n is given by the user
+            int n = userDictionary.length;
+            // k is chosen by us based on n^x = 500, logn(n^k)=logn(500), k = logn(500)
+            int k = (int) (Math.log(500) / Math.log(n));
+            
+            names = new Permutations(userDictionary, k).get();
         }
         else {
             defaultDic = new Permutations(new String[]{"1", "l"}, 50).get();
@@ -197,9 +205,6 @@ public class NameUtils {
     }
 
     public static void cleanUp() {
-        classNames.clear();
-        classNames = new ArrayList<>();
-
         names.clear();
         names = new ArrayList<>();
         
