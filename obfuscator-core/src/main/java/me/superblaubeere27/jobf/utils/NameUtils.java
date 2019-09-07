@@ -195,12 +195,15 @@ public class NameUtils {
             // n is given by the user
             int n = userDictionary.length;
             // k is chosen by us based on n^x = 500, logn(n^k)=logn(500), k = logn(500)
-            int k = (int) (Math.log(500) / Math.log(n));
+            int k = (int) (Math.log(20) / Math.log(n));
+            System.out.println(userDictionary);
+            System.out.println("K: " + n + " " + Math.log(500) + " " + Math.log(n) + " " + k);
             
             names = new Permutations(userDictionary, k).get();
         }
         else {
-            defaultDic = new Permutations(new String[]{"1", "l"}, 50).get();
+            System.out.println("K: 20");
+            defaultDic = new Permutations(new String[]{"1", "l"}, 20).get();
         }
     }
 

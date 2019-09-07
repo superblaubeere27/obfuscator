@@ -1,6 +1,7 @@
 package me.superblaubeere27.jobf.utils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 
 public class Permutations
@@ -22,8 +23,9 @@ public class Permutations
 		
 		get(dict, "", dict.length, num);
 		
-		current.sort(AlphabeticComparator);
-		current.sort(StrLengthComparator);
+		//current.sort(AlphabeticComparator);
+		//current.sort(StrLengthComparator);
+		Collections.shuffle(current);
 		return current;
 	}
 	
