@@ -13,6 +13,7 @@ package me.superblaubeere27.jobf.utils;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import me.superblaubeere27.jobf.JObf;
 import me.superblaubeere27.jobf.JObfImpl;
 import me.superblaubeere27.jobf.processors.name.ClassWrapper;
 import me.superblaubeere27.jobf.utils.values.DeprecationLevel;
@@ -32,6 +33,7 @@ import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Random;
 import java.util.StringJoiner;
+import java.util.logging.Level;
 import java.util.zip.ZipFile;
 
 import static org.objectweb.asm.Opcodes.*;
@@ -273,7 +275,11 @@ public class Utils {
 	{
 	    try
         {
-            String integerRepresentation = Integer.toUnsignedString(i, dictionary.size());
+            int radix = Math.max(Math.min(dictionary.size(), Character.MAX_RADIX), Character.MIN_RADIX);
+            
+            if(radix != dictionary.size()) JObf.log.log(Level.WARNING, "Dictionary was too large, it might not all be used");
+            
+            String integerRepresentation = Integer.toUnsignedString(i, radix);
             StringBuilder builder = new StringBuilder();
             for(char c: integerRepresentation.toCharArray())
             {
