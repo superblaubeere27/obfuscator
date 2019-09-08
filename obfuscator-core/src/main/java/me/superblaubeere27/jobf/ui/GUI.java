@@ -402,11 +402,26 @@ public class GUI extends JFrame {
                 } catch (Throwable e) {
                     e.printStackTrace();
 	
-                    String msg = e.toString() + "\n";
-                    
-					msg += Throwables.getStackTraceAsString(e);
+                    String msg = e.toString();
+					String stacktrace = Throwables.getStackTraceAsString(e);
 					
-                    JOptionPane.showMessageDialog(this, msg, "ERROR encountered at " + e.getStackTrace()[0].getClassName(), JOptionPane.ERROR_MESSAGE);
+					// Display popup
+					JDialog dialog = new JDialog(this, true);
+					dialog.setTitle(msg);
+					dialog.setSize(500, 300);
+                    
+					JTextArea textArea = new JTextArea(stacktrace, 5, 10);
+					textArea.setEditable(false);
+    
+                    JScrollPane scrollPane = new JScrollPane(textArea);
+                    scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+                    
+                    dialog.add(scrollPane);
+     
+					dialog.setVisible(true);
+                    dialog.toFront();
+					
+                   // JOptionPane.showMessageDialog(this, msg, "ERROR encountered at " + e.getStackTrace()[0].getClassName(), JOptionPane.ERROR_MESSAGE);
                 }
                 obfuscateButton.setEnabled(true);
             }, "Obfuscator thread").start();
