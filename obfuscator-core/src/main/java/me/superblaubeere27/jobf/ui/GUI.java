@@ -10,6 +10,7 @@
 
 package me.superblaubeere27.jobf.ui;
 
+import com.google.common.base.Throwables;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
@@ -400,7 +401,12 @@ public class GUI extends JFrame {
                     JObfImpl.INSTANCE.processJar(config);
                 } catch (Throwable e) {
                     e.printStackTrace();
-                    JOptionPane.showMessageDialog(this, e.toString(), "ERROR", JOptionPane.ERROR_MESSAGE);
+	
+                    String msg = e.toString() + "\n";
+                    
+					msg += Throwables.getStackTraceAsString(e);
+					
+                    JOptionPane.showMessageDialog(this, msg, "ERROR encountered at " + e.getStackTrace()[0].getClassName(), JOptionPane.ERROR_MESSAGE);
                 }
                 obfuscateButton.setEnabled(true);
             }, "Obfuscator thread").start();

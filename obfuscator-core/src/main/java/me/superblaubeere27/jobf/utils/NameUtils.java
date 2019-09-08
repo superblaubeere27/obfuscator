@@ -35,8 +35,8 @@ public class NameUtils {
     private static int METHODS = 0;
     private static int FIELDS = 0;
     private static boolean usingCustomDictionary = false;
-    private static List<String> classNames = new ArrayList<>();
-    private static List<String> names = new ArrayList<>();
+    private static List<String> defaultDictionary = Arrays.asList("1", "l");
+    private static List<String> customDictionary = new ArrayList<>();
 
     @SuppressWarnings("SameParameterValue")
     private static int randInt(int min, int max) {
@@ -69,16 +69,17 @@ public class NameUtils {
         int id = packageMap.get(packageName);
         packageMap.put(packageName, id + 1);
 
-        return getName(classNames, id);
+        return getName(id);
 //        return ClassNameGenerator.className(Utils.random(2, 5));
     }
 
-    private static String getName(List<String> dictionary, int id) {
-        if (usingCustomDictionary && id < dictionary.size()) {
-            return dictionary.get(id);
+    private static String getName(int id) {
+        if (usingCustomDictionary)
+        {
+            return Utils.randomise(id, customDictionary);
         }
 
-        return Utils.toIl(id);
+        return Utils.randomise(id, defaultDictionary);
     }
 
     /**
@@ -119,7 +120,7 @@ public class NameUtils {
 //        String name = getName(names, i);
 //
 //        return name;
-        return getName(names, METHODS++);
+        return getName(METHODS++);
     }
 
     public static String generateMethodName(final ClassNode classNode, String desc) {
@@ -135,7 +136,7 @@ public class NameUtils {
 //        USED_FIELDNAMES.put(className, i + 1);
 //
 //        return getName(names, i);
-        return getName(names, FIELDS++);
+        return getName(FIELDS++);
     }
 
     public static String generateFieldName(final ClassNode classNode) {
@@ -147,7 +148,7 @@ public class NameUtils {
     }
 
     public static String generateLocalVariableName() {
-        return Utils.toIl(localVars--);
+        return Utils.randomise(localVars--, usingCustomDictionary ? customDictionary : defaultDictionary);
     }
 
     private static int getLenght() {
@@ -181,22 +182,16 @@ public class NameUtils {
 
     public static void applySettings(JObfSettings settings) {
         usingCustomDictionary = settings.getUseCustomDictionary().getObject();
-
-        try {
-            if (usingCustomDictionary) {
-                classNames = Files.readLines(new File(settings.getClassNameDictionary().getObject()), StandardCharsets.UTF_8);
-                names = Files.readLines(new File(settings.getNameDictionary().getObject()), StandardCharsets.UTF_8);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to load names: " + e.getLocalizedMessage(), e);
+        
+        if (usingCustomDictionary) {
+            // If the user is using a custom dictionary then we will split their input into a comma delimited list of strings to be added to the dictionary used for name generation
+            String[] dic = settings.getNameDictionary().getObject().replace("\n", ",").replace(", ", ",").split(",");
+            customDictionary = Arrays.asList(dic);
         }
     }
 
     public static void cleanUp() {
-        classNames.clear();
-        classNames = new ArrayList<>();
-
-        names.clear();
-        names = new ArrayList<>();
+        //customDictionary.clear(); Removed, throws UnsupportedOperationException
+        customDictionary = new ArrayList<>();
     }
 }

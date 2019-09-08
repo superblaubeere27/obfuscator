@@ -256,11 +256,9 @@ public class NameObfuscation implements INameObfuscationProcessor {
     private boolean isClassExcluded(ClassWrapper classWrapper) {
         String str = classWrapper.classNode.name;
 	
-	JObf.log.log(Level.FINE, "-----------------\nTexting class exclude for class '" + str + "'");
         for (Pattern excludedMethodsPattern : excludedClassesPatterns) {
-	    JObf.log.log(Level.FINE, "Regex: " + excludedMethodsPattern.pattern());
-	    JObf.log.log(Level.FINE, "Result: " + excludedMethodsPattern.matcher(str).matches());
             if (excludedMethodsPattern.matcher(str).matches()) {
+				JObf.log.log(Level.INFO, "Class '" + classWrapper.classNode.name + "' was excluded from name obfuscation by regex '" + excludedMethodsPattern.pattern() + "'");
                 return true;
             }
         }
