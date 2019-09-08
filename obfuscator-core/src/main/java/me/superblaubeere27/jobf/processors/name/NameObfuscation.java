@@ -10,7 +10,6 @@
 
 package me.superblaubeere27.jobf.processors.name;
 
-import com.sun.media.jfxmedia.logging.Logger;
 import me.superblaubeere27.jobf.JObf;
 import me.superblaubeere27.jobf.JObfImpl;
 import me.superblaubeere27.jobf.utils.ClassTree;
