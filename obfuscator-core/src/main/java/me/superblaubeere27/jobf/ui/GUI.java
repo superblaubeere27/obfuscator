@@ -23,6 +23,7 @@ import org.fife.ui.rsyntaxtextarea.Theme;
 import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -401,12 +402,18 @@ public class GUI extends JFrame {
                     JObfImpl.INSTANCE.processJar(config);
                 } catch (Throwable e) {
                     e.printStackTrace();
-	
-                    String msg = e.toString() + "\n";
-                    
-					msg += Throwables.getStackTraceAsString(e);
-					
-                    JOptionPane.showMessageDialog(this, msg, "ERROR encountered at " + e.getStackTrace()[0].getClassName(), JOptionPane.ERROR_MESSAGE);
+
+                    JPanel panel = new JPanel();
+
+                    panel.setBorder(new EmptyBorder(5, 5, 5, 5));
+                    panel.setLayout(new BorderLayout(0, 0));
+
+                    JTextArea comp = new JTextArea(Throwables.getStackTraceAsString(e));
+                    comp.setEditable(false);
+                    JScrollPane scroll = new JScrollPane(comp, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
+                    panel.add(scroll);
+
+                    JOptionPane.showMessageDialog(this, panel, "ERROR encountered at " + e.getStackTrace()[0].getClassName(), JOptionPane.ERROR_MESSAGE);
                 }
                 obfuscateButton.setEnabled(true);
             }, "Obfuscator thread").start();

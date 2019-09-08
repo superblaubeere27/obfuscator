@@ -35,8 +35,9 @@ public class NameUtils {
     private static int METHODS = 0;
     private static int FIELDS = 0;
     private static boolean usingCustomDictionary = false;
-    private static List<String> defaultDictionary = Arrays.asList("1", "l");
-    private static List<String> customDictionary = new ArrayList<>();
+    private static List<String> classNames = new ArrayList<>();
+    private static List<String> names = new ArrayList<>();
+    private static String chars = "Il";
 
     @SuppressWarnings("SameParameterValue")
     private static int randInt(int min, int max) {
@@ -69,17 +70,16 @@ public class NameUtils {
         int id = packageMap.get(packageName);
         packageMap.put(packageName, id + 1);
 
-        return getName(id);
+        return getName(classNames, id);
 //        return ClassNameGenerator.className(Utils.random(2, 5));
     }
 
-    private static String getName(int id) {
-        if (usingCustomDictionary)
-        {
-            return Utils.randomise(id, customDictionary);
+    private static String getName(List<String> dictionary, int id) {
+        if (usingCustomDictionary && id < dictionary.size()) {
+            return dictionary.get(id);
         }
 
-        return Utils.randomise(id, defaultDictionary);
+        return Utils.convertToBase(id, chars);
     }
 
     /**
@@ -120,7 +120,7 @@ public class NameUtils {
 //        String name = getName(names, i);
 //
 //        return name;
-        return getName(METHODS++);
+        return getName(names, METHODS++);
     }
 
     public static String generateMethodName(final ClassNode classNode, String desc) {
@@ -136,7 +136,7 @@ public class NameUtils {
 //        USED_FIELDNAMES.put(className, i + 1);
 //
 //        return getName(names, i);
-        return getName(FIELDS++);
+        return getName(names, FIELDS++);
     }
 
     public static String generateFieldName(final ClassNode classNode) {
@@ -148,12 +148,9 @@ public class NameUtils {
     }
 
     public static String generateLocalVariableName() {
-        return Utils.randomise(localVars--, usingCustomDictionary ? customDictionary : defaultDictionary);
+        return Utils.convertToBase(localVars--, chars);
     }
 
-    private static int getLenght() {
-        return new Random().nextInt(20) + 6;
-    }
 
     public static String unicodeString(int length) {
         StringBuilder stringBuilder = new StringBuilder();
@@ -180,18 +177,34 @@ public class NameUtils {
         return lin == -1 ? "" : in.substring(0, lin);
     }
 
+
     public static void applySettings(JObfSettings settings) {
+        if (settings.getGeneratorChars().getObject().length() == 0) {
+            settings.getGeneratorChars().setObject("Il");
+            throw new IllegalStateException("The generator chars are empty. Changing them to 'Il'");
+        }
+
+        chars = settings.getGeneratorChars().getObject();
+
         usingCustomDictionary = settings.getUseCustomDictionary().getObject();
-        
-        if (usingCustomDictionary) {
-            // If the user is using a custom dictionary then we will split their input into a comma delimited list of strings to be added to the dictionary used for name generation
-            String[] dic = settings.getNameDictionary().getObject().replace("\n", ",").replace(", ", ",").split(",");
-            customDictionary = Arrays.asList(dic);
+
+        try {
+            if (usingCustomDictionary) {
+                classNames = Files.readLines(new File(settings.getClassNameDictionary().getObject()), StandardCharsets.UTF_8);
+                names = Files.readLines(new File(settings.getNameDictionary().getObject()), StandardCharsets.UTF_8);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to load names: " + e.getLocalizedMessage(), e);
         }
     }
 
     public static void cleanUp() {
-        //customDictionary.clear(); Removed, throws UnsupportedOperationException
-        customDictionary = new ArrayList<>();
+        classNames.clear();
+        classNames = new ArrayList<>();
+
+        names.clear();
+        names = new ArrayList<>();
+        chars = "Il";
     }
+
 }
