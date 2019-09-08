@@ -108,7 +108,7 @@ public class GUI extends JFrame {
                 }
             }
         });
-        clearLogButton.addActionListener(e -> { logArea.setText(""); });
+        clearLogButton.addActionListener(e -> logArea.setText(""));
         loadButton.addActionListener(e -> {
             String name = Utils.chooseFile(null, GUI.this, new JObfFileFilter());
             if (name != null) {
