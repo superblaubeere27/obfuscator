@@ -271,13 +271,19 @@ public class Utils {
      */
     public static String randomise(int i, java.util.List<String> dictionary)
 	{
-		String integerRepresentation = Integer.toUnsignedString(i, dictionary.size());
-		StringBuilder builder = new StringBuilder();
-		for(char c: integerRepresentation.toCharArray())
-		{
-			builder.append(dictionary.get(Integer.parseInt(c + "")));
-		}
-		return builder.toString();
+	    try
+        {
+            String integerRepresentation = Integer.toUnsignedString(i, dictionary.size());
+            StringBuilder builder = new StringBuilder();
+            for(char c: integerRepresentation.toCharArray())
+            {
+                builder.append(dictionary.get(Integer.parseInt(c + "")));
+            }
+            return builder.toString();
+        }
+	    catch(Exception e) { e.printStackTrace(); }
+	    
+	    throw new RuntimeException("Unsupported operation when randomising a name, please use a smaller dictionary size");
 	}
 
     public static String replaceMainClass(String s, String main) {
