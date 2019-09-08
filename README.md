@@ -182,6 +182,38 @@ public class HelloWorld {
 }
 ```
 
+## Contributing
+
+##### 1. Fork the repository
+
+- Click the "Fork" button at the top right hand corner of this page
+- Then run `git clone https://github.com/[your github username]/obfuscator.git`
+
+##### 2. Import into IntelliJ
+
+- File -> New -> Project From Existing Sources
+- Select `C:\[Path To]\obfuscator\pom.xml`
+- Set "Search for projects recursively" and "Import Maven projects automatically" to true and click next
+- Make sure all maven projects are ticked
+- Select the correct Java SDK and go with all the default options for the next pages
+
+##### 3. Editing
+
+- Make any edits
+- Package the project to make sure that the project is still functional:
+  - `java -Dmaven.multiModuleProjectDirectory=D:\Computing\obfuscator\obfuscator-core "-Dmaven.home=C:\Program Files\JetBrains\IntelliJ IDEA 2019.1.3\plugins\maven\lib\maven3" "-Dclassworlds.conf=C:\Program Files\JetBrains\IntelliJ IDEA 2019.1.3\plugins\maven\lib\maven3\bin\m2.conf" "-javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2019.1.3\lib\idea_rt.jar=18889:C:\Program Files\JetBrains\IntelliJ IDEA 2019.1.3\bin" -Dfile.encoding=UTF-8 -classpath "C:\Program Files\JetBrains\IntelliJ IDEA 2019.1.3\plugins\maven\lib\maven3\boot\plexus-classworlds-2.5.2.jar" org.codehaus.classworlds.Launcher -Didea.version2019.1.3 package` (Change any paths to be relevant to your system)
+
+##### 3. Commit
+
+- Run `git status` to see which files you've changed
+- Run `git add [file name]` for each of the files you want to submit your changes to
+- Do `git commit -m "[A description of the changes]"`
+
+##### 4. Pull Request
+
+- Go to `https://github.com/[your github username]/obfuscator` and click "Pull Requests" and then "New Pull Request"
+- Make sure all your changes are included then submit the Pull Request.
+
 ## Credits
 - MCInjector (FFixer base)
 - FFixer (Obfuscator base)
