@@ -182,6 +182,41 @@ public class HelloWorld {
 }
 ```
 
+### Excluding Classes
+
+In some situations you need to prevent certain classes from being obfuscated, such as dependencies packaged with your jar or mixins in a forge mod.
+
+You will need to exclude in two places.
+
+##### Scripting Tab
+
+Here is an example script that will obfuscate and remap all classes except the org.json dependency and mixins.
+```javascript
+function isRemappingEnabledForClass(node) {
+    flag1 = !node.name.startsWith("org/json");
+    flag2 = !node.name.startsWith("com/client/mixin");
+    return flag1 && flag2;
+}
+function isObfuscatorEnabledForClass(node) {
+    flag1 = !node.name.startsWith("org/json");
+    flag2 = !node.name.startsWith("com/client/mixin");
+    return flag1 && flag2;
+}
+```
+
+##### Name Obfuscation
+
+If you also want to exclude these classes from name obfuscation you will need to go to Transformers -> Name Obfuscation and add these exclusions there.
+
+To Exclude the same classes as we did above, we would need to add the following to Excluded classes, methods and fields.
+```regexp
+org.json.**
+com.client.mixin.**
+```
+
+
+If your classes are still being obfuscated after applyinng both of these exclusions please open an issue.
+
 ## Contributing
 
 ##### 1. Fork the repository
@@ -208,6 +243,7 @@ public class HelloWorld {
 - Run `git status` to see which files you've changed
 - Run `git add [file name]` for each of the files you want to submit your changes to
 - Do `git commit -m "[A description of the changes]"`
+- And finally `git push` to upload your changes to GitHub
 
 ##### 4. Pull Request
 
