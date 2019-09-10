@@ -90,7 +90,7 @@ public class GUI extends JFrame {
             }
         });
         outputBrowseButton.addActionListener(e -> {
-            String file = Utils.chooseFileToSave(null, GUI.this, new JarFileFilter());
+            String file = Utils.chooseFile(null, GUI.this, new JarFileFilter(), true);
             if (file != null) {
                 outputTextField.setText(file);
             }
@@ -98,7 +98,7 @@ public class GUI extends JFrame {
         obfuscateButton.addActionListener(e -> startObfuscator());
         buildButton.addActionListener(e -> buildConfig());
         saveButton.addActionListener(e -> {
-            String name = Utils.chooseFileToSave(null, GUI.this, new JObfFileFilter());
+            String name = Utils.chooseFile(null, GUI.this, new JObfFileFilter(), true);
             if (name != null) {
                 buildConfig();
                 try {
@@ -292,7 +292,7 @@ public class GUI extends JFrame {
                     panel.add(browseButton = new JButton("Browse"));
 
                     browseButton.addActionListener(e -> {
-                        String file = Utils.chooseFileToSave(null, GUI.this, new FileNameExtensionFilter("Text files", "txt"));
+                        String file = Utils.chooseFile(null, GUI.this, new FileNameExtensionFilter("Text files", "txt"), true);
 
                         if (file != null) {
                             textBox.setText(file);
