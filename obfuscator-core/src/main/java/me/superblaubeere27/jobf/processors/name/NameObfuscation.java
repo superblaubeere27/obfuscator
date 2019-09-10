@@ -32,8 +32,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Pattern;
 import java.util.logging.Level;
+import java.util.regex.Pattern;
 
 public class NameObfuscation implements INameObfuscationProcessor {
     private static String PROCESSOR_NAME = "NameObfuscation";
@@ -107,7 +107,7 @@ public class NameObfuscation implements INameObfuscationProcessor {
                 for (FieldWrapper field : classWrapper.fields) {
                     if ((Modifier.isPrivate(field.fieldNode.access) || Modifier.isProtected(field.fieldNode.access)) && excluded)
                         continue;
-                    
+
                     field.fieldNode.access &= ~Opcodes.ACC_PRIVATE;
                     field.fieldNode.access &= ~Opcodes.ACC_PROTECTED;
                     field.fieldNode.access |= Opcodes.ACC_PUBLIC;
@@ -124,7 +124,7 @@ public class NameObfuscation implements INameObfuscationProcessor {
                     }
 
                     try {
-                        if (canRenameMethodTree(mappings, new HashSet<>(), methodWrapper, classWrapper.originalName)) {
+                        if (!isMethodExcluded(classWrapper.originalName, methodWrapper) && canRenameMethodTree(mappings, new HashSet<>(), methodWrapper, classWrapper.originalName)) {
                             this.renameMethodTree(mappings, new HashSet<>(), methodWrapper, classWrapper.originalName, NameUtils.generateMethodName(classWrapper.originalName, methodWrapper.originalDescription));
                         }
                     } catch (Exception e) {
@@ -133,7 +133,7 @@ public class NameObfuscation implements INameObfuscationProcessor {
                 });
 
                 classWrapper.fields.forEach(fieldWrapper -> {
-                    if (canRenameFieldTree(mappings, new HashSet<>(), fieldWrapper, classWrapper.originalName)) {
+                    if (!isFieldExcluded(classWrapper.originalName, fieldWrapper) && canRenameFieldTree(mappings, new HashSet<>(), fieldWrapper, classWrapper.originalName)) {
                         this.renameFieldTree(new HashSet<>(), fieldWrapper, classWrapper.originalName, NameUtils.generateFieldName(classWrapper.originalName), mappings);
                     }
                 });
@@ -255,10 +255,10 @@ public class NameObfuscation implements INameObfuscationProcessor {
 
     private boolean isClassExcluded(ClassWrapper classWrapper) {
         String str = classWrapper.classNode.name;
-	
+
         for (Pattern excludedMethodsPattern : excludedClassesPatterns) {
             if (excludedMethodsPattern.matcher(str).matches()) {
-				JObf.log.log(Level.INFO, "Class '" + classWrapper.classNode.name + "' was excluded from name obfuscation by regex '" + excludedMethodsPattern.pattern() + "'");
+                JObf.log.log(Level.INFO, "Class '" + classWrapper.classNode.name + "' was excluded from name obfuscation by regex '" + excludedMethodsPattern.pattern() + "'");
                 return true;
             }
         }
@@ -291,10 +291,6 @@ public class NameObfuscation implements INameObfuscationProcessor {
     }
 
     private boolean canRenameMethodTree(HashMap<String, String> mappings, HashSet<ClassTree> visited, MethodWrapper methodWrapper, String owner) {
-        if (isMethodExcluded(owner, methodWrapper)) {
-            return false;
-        }
-
         ClassTree tree = JObfImpl.INSTANCE.getTree(owner);
         if (!visited.contains(tree)) {
             visited.add(tree);
@@ -309,7 +305,7 @@ public class NameObfuscation implements INameObfuscationProcessor {
             if (!methodWrapper.owner.originalName.equals(owner) && tree.classWrapper.libraryNode) {
                 for (MethodNode mn : tree.classWrapper.classNode.methods) {
                     if (mn.name.equals(methodWrapper.originalName)
-                            & mn.desc.equals(methodWrapper.originalDescription)) {
+                            && mn.desc.equals(methodWrapper.originalDescription)) {
                         return false;
                     }
                 }
@@ -346,10 +342,6 @@ public class NameObfuscation implements INameObfuscationProcessor {
     }
 
     private boolean canRenameFieldTree(HashMap<String, String> mappings, HashSet<ClassTree> visited, FieldWrapper fieldWrapper, String owner) {
-        if (isFieldExcluded(owner, fieldWrapper)) {
-            return false;
-        }
-
         ClassTree tree = JObfImpl.INSTANCE.getTree(owner);
         if (!visited.contains(tree)) {
             visited.add(tree);
