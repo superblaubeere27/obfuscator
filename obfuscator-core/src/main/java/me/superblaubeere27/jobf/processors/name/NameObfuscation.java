@@ -14,6 +14,8 @@ import me.superblaubeere27.jobf.JObf;
 import me.superblaubeere27.jobf.JObfImpl;
 import me.superblaubeere27.jobf.utils.ClassTree;
 import me.superblaubeere27.jobf.utils.NameUtils;
+import me.superblaubeere27.jobf.utils.Utils;
+import me.superblaubeere27.jobf.utils.values.BooleanValue;
 import me.superblaubeere27.jobf.utils.values.DeprecationLevel;
 import me.superblaubeere27.jobf.utils.values.EnabledValue;
 import me.superblaubeere27.jobf.utils.values.StringValue;
@@ -26,10 +28,7 @@ import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
@@ -42,13 +41,58 @@ public class NameObfuscation implements INameObfuscationProcessor {
     private StringValue excludedClasses = new StringValue(PROCESSOR_NAME, "Excluded classes", null, DeprecationLevel.GOOD, "me.name.Class\nme.name.*\nio.netty.**", 5);
     private StringValue excludedMethods = new StringValue(PROCESSOR_NAME, "Excluded methods", null, DeprecationLevel.GOOD, "me.name.Class.method\nme.name.Class**\nme.name.Class.*", 5);
     private StringValue excludedFields = new StringValue(PROCESSOR_NAME, "Excluded fields", null, DeprecationLevel.GOOD, "me.name.Class.field\nme.name.Class.*\nme.name.**", 5);
+    private BooleanValue shouldPackage = new BooleanValue(PROCESSOR_NAME, "Package", DeprecationLevel.OK, false);
+    private StringValue newPackage = new StringValue(PROCESSOR_NAME, "New Packages", null, DeprecationLevel.GOOD, "", 5);
 
-    private String repackageName = "obfuscator";
-    private boolean repackage = false;
+    private List<String> packageNames;
 
     private List<Pattern> excludedClassesPatterns = new ArrayList<>();
     private List<Pattern> excludedMethodsPatterns = new ArrayList<>();
     private List<Pattern> excludedFieldsPatterns = new ArrayList<>();
+    
+    private static Random random = new Random();
+    
+    public void setupPackages()
+    {
+        if(shouldPackage.getObject())
+        {
+            JObf.log.info("First Packages: " + newPackage.getObject());
+            String[] newPackages = newPackage.getObject().split("\n");
+            JObf.log.info("New Packages: " + Arrays.toString(newPackages));
+            packageNames = Arrays.asList(newPackages);
+            JObf.log.info("Packages: " + packageNames.toString());
+        }
+    }
+    
+    public String getPackageName()
+    {
+        if(shouldPackage.getObject())
+        {
+            if(packageNames == null) setupPackages();
+            
+            String retVal;
+            if(packageNames
+                .size() == 1
+                &&
+                packageNames.get(0)
+                    .equalsIgnoreCase("common"))
+            {
+                retVal = CommonPackageTrees.getRandomPackage();
+            }
+            else
+            {
+                retVal = packageNames.get(random.nextInt(packageNames.size()));
+            }
+    
+            if(retVal.startsWith("/"))
+                retVal = retVal.substring(1);
+            if(!retVal.endsWith("/"))
+                retVal = retVal + "/";
+    
+            return retVal;
+        }
+        return "";
+    }
 
     private void putMapping(HashMap<String, String> mappings, String str, String str1) {
         mappings.put(str, str1);
@@ -148,8 +192,7 @@ public class NameObfuscation implements INameObfuscationProcessor {
                 classWrapper.classNode.access &= ~Opcodes.ACC_PROTECTED;
                 classWrapper.classNode.access |= Opcodes.ACC_PUBLIC;
 
-                putMapping(mappings, classWrapper.originalName, (repackage)
-                        ? repackageName + '/' + NameUtils.generateClassName() : NameUtils.generateClassName());
+                putMapping(mappings, classWrapper.originalName, getPackageName() + NameUtils.generateClassName());
                 classCounter.incrementAndGet();
             });
 
@@ -258,7 +301,7 @@ public class NameObfuscation implements INameObfuscationProcessor {
 	
         for (Pattern excludedMethodsPattern : excludedClassesPatterns) {
             if (excludedMethodsPattern.matcher(str).matches()) {
-				JObf.log.log(Level.INFO, "Class '" + classWrapper.classNode.name + "' was excluded from name obfuscation by regex '" + excludedMethodsPattern.pattern() + "'");
+				JObf.log.log(Level.FINEST, "Class '" + classWrapper.classNode.name + "' was excluded from name obfuscation by regex '" + excludedMethodsPattern.pattern() + "'");
                 return true;
             }
         }

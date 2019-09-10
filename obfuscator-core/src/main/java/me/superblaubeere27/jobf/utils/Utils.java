@@ -187,11 +187,6 @@ public class Utils {
     public static String chooseFile(File currFolder, final Component parent, FileFilter filter) {
         return chooseFile(currFolder, parent, filter, false);
     }
-    
-    public static Object getRandomEntry(List list)
-    {
-        return list.get(random.nextInt(list.size()));
-    }
 
     public static String chooseFile(File currFolder, final Component parent, FileFilter filter, boolean toSave) {
         if(currFolder == null) {
