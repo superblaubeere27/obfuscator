@@ -56,11 +56,8 @@ public class NameObfuscation implements INameObfuscationProcessor {
     {
         if(shouldPackage.getObject())
         {
-            JObf.log.info("First Packages: " + newPackage.getObject());
             String[] newPackages = newPackage.getObject().split("\n");
-            JObf.log.info("New Packages: " + Arrays.toString(newPackages));
             packageNames = Arrays.asList(newPackages);
-            JObf.log.info("Packages: " + packageNames.toString());
         }
     }
     
@@ -71,11 +68,7 @@ public class NameObfuscation implements INameObfuscationProcessor {
             if(packageNames == null) setupPackages();
             
             String retVal;
-            if(packageNames
-                .size() == 1
-                &&
-                packageNames.get(0)
-                    .equalsIgnoreCase("common"))
+            if(packageNames.size() == 1 && packageNames.get(0).equalsIgnoreCase("common"))
             {
                 retVal = CommonPackageTrees.getRandomPackage();
             }
