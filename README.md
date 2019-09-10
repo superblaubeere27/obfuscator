@@ -243,6 +243,7 @@ If your classes are still being obfuscated after applyinng both of these exclusi
 - Run `git status` to see which files you've changed
 - Run `git add [file name]` for each of the files you want to submit your changes to
 - Do `git commit -m "[A description of the changes]"`
+- And finally `git push` to upload your changes to GitHub
 
 ##### 4. Pull Request
 
