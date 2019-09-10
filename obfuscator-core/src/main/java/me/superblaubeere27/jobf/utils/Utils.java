@@ -183,7 +183,12 @@ public class Utils {
         return null;
     }
 
-    public static String chooseFile(final File currFolder, final Component parent, FileFilter filter) {
+    public static String chooseFile(File currFolder, final Component parent, FileFilter filter) {
+        if(currFolder == null) {
+            try {
+                currFolder = new File(Utils.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath());
+            } catch(Exception ignored){};
+        }
         final JFileChooser chooser = new JFileChooser(currFolder);
         chooser.setFileFilter(filter);
         if (chooser.showOpenDialog(parent) == JFileChooser.APPROVE_OPTION)
