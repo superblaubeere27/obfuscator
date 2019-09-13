@@ -105,7 +105,7 @@
         <dependency>
             <groupId>me.superblaubeere27</groupId>
             <artifactId>obfuscator-annotations</artifactId>
-            <version>1.9.3</version>
+            <version>1.9.3-SNAPSHOT</version>
         </dependency>
         <!--<dependency>-->
         <!--<groupId>com.diffplug.jscriptbox</groupId>-->
