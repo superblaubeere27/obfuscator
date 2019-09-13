@@ -31,6 +31,7 @@ import java.io.OutputStream;
 import java.lang.reflect.Array;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
 import java.util.StringJoiner;
 import java.util.logging.Level;
@@ -184,6 +185,10 @@ public class Utils {
     }
 
     public static String chooseFile(File currFolder, final Component parent, FileFilter filter) {
+        return chooseFile(currFolder, parent, filter, false);
+    }
+
+    public static String chooseFile(File currFolder, final Component parent, FileFilter filter, boolean toSave) {
         if(currFolder == null) {
             try {
                 currFolder = new File(Utils.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath());
@@ -191,15 +196,12 @@ public class Utils {
         }
         final JFileChooser chooser = new JFileChooser(currFolder);
         chooser.setFileFilter(filter);
-        if (chooser.showOpenDialog(parent) == JFileChooser.APPROVE_OPTION)
-            return chooser.getSelectedFile().getAbsolutePath();
-        return null;
-    }
-
-    public static String chooseFileToSave(final File currFolder, final Component parent, FileFilter filter) {
-        final JFileChooser chooser = new JFileChooser(currFolder);
-        chooser.setFileFilter(filter);
-        if (chooser.showSaveDialog(parent) == JFileChooser.APPROVE_OPTION)
+        int result;
+        if(toSave)
+            result = chooser.showSaveDialog(parent);
+        else
+            result = chooser.showOpenDialog(parent);
+        if (result == JFileChooser.APPROVE_OPTION)
             return chooser.getSelectedFile().getAbsolutePath();
         return null;
     }
