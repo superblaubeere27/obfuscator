@@ -173,7 +173,7 @@ public class JObfImpl {
 //                    classPath.putAll(loadClasspathFile(file));
                 } else {
                     Files.walk(file.toPath()).map(Path::toFile).filter(f -> f.getName().endsWith(".jar") || f.getName().endsWith(".zip") || f.getName().endsWith(".jmod")).forEach(f -> {
-
+                        JObf.log.info("Loading " + f.getName() + " (from " + file.getAbsolutePath() + ") to memory");
                         try {
                             byteList.addAll(loadClasspathFile(f));
 //                            classPath.putAll(loadClasspathFile(f));

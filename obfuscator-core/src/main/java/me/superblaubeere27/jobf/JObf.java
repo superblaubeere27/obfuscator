@@ -235,8 +235,6 @@ public class JObf {
                 "Config:     " + (configPath != null ? configPath.getPath() : "")
         )));
 
-        JObfImpl impl = new JObfImpl();
-
         Configuration config = new Configuration(jarIn, jarOut, scriptContent, libraries);
 
         if (configPath != null) {
@@ -283,10 +281,10 @@ public class JObf {
             Thread.sleep(10000);
         }
 
-        impl.setThreadCount(threads);
+        JObfImpl.INSTANCE.setThreadCount(threads);
 
         try {
-            impl.processJar(config);
+            JObfImpl.INSTANCE.processJar(config);
         } catch (Exception e) {
             System.err.println("ERROR: " + e.getMessage());
             e.printStackTrace();

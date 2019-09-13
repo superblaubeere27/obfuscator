@@ -15,12 +15,12 @@
     <parent>
         <artifactId>obfuscator</artifactId>
         <groupId>me.superblaubeere27</groupId>
-        <version>1.9.3</version>
+        <version>1.9.3-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>obfuscator-core</artifactId>
-    <version>1.9.3</version>
+    <version>1.9.3-SNAPSHOT</version>
 
     <repositories>
         <repository>
