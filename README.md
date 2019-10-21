@@ -193,13 +193,13 @@ You will need to exclude in two places.
 Here is an example script that will obfuscate and remap all classes except the org.json dependency and mixins.
 ```javascript
 function isRemappingEnabledForClass(node) {
-    flag1 = !node.name.startsWith("org/json");
-    flag2 = !node.name.startsWith("com/client/mixin");
+    var flag1 = !node.name.startsWith("org/json");
+    var flag2 = !node.name.startsWith("com/client/mixin");
     return flag1 && flag2;
 }
 function isObfuscatorEnabledForClass(node) {
-    flag1 = !node.name.startsWith("org/json");
-    flag2 = !node.name.startsWith("com/client/mixin");
+    var flag1 = !node.name.startsWith("org/json");
+    var flag2 = !node.name.startsWith("com/client/mixin");
     return flag1 && flag2;
 }
 ```
