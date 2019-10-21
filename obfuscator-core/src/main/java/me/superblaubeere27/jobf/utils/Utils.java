@@ -13,7 +13,6 @@ package me.superblaubeere27.jobf.utils;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
-import me.superblaubeere27.jobf.JObf;
 import me.superblaubeere27.jobf.JObfImpl;
 import me.superblaubeere27.jobf.processors.name.ClassWrapper;
 import me.superblaubeere27.jobf.utils.values.DeprecationLevel;
@@ -31,10 +30,8 @@ import java.io.OutputStream;
 import java.lang.reflect.Array;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Random;
 import java.util.StringJoiner;
-import java.util.logging.Level;
 import java.util.zip.ZipFile;
 
 import static org.objectweb.asm.Opcodes.*;
@@ -192,7 +189,8 @@ public class Utils {
         if(currFolder == null) {
             try {
                 currFolder = new File(Utils.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath());
-            } catch(Exception ignored){};
+            } catch (Exception ignored) {
+            }
         }
         final JFileChooser chooser = new JFileChooser(currFolder);
         chooser.setFileFilter(filter);
@@ -292,7 +290,7 @@ public class Utils {
 
         for (String s1 : s.split("\n")) {
             if (s1.startsWith("Main-Class")) {
-                sb.append("Main-Class: ").append(main);
+                sb.append("Main-Class: ").append(main).append("\n");
             } else {
                 sb.append(s1).append("\n");
             }
