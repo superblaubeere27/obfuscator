@@ -41,10 +41,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
+import java.util.zip.*;
 
 public class JObfImpl {
     public static final JObfImpl INSTANCE = new JObfImpl();
@@ -276,6 +273,8 @@ public class JObfImpl {
         ZipInputStream inJar = null;
         ZipOutputStream outJar = null;
 
+        boolean stored = settings.getUseStore().getObject();
+
         libraryFiles = new ArrayList<>();
 
         classes = new HashMap<>();
@@ -311,6 +310,11 @@ public class JObfImpl {
             try {
                 OutputStream out = (config.getOutput() == null ? new ByteArrayOutputStream() : new FileOutputStream(config.getOutput()));
                 outJar = new ZipOutputStream(new BufferedOutputStream(out));
+                outJar.setMethod(stored ? ZipOutputStream.STORED : ZipOutputStream.DEFLATED);
+
+                if (stored) {
+                    outJar.setLevel(Deflater.NO_COMPRESSION);
+                }
             } catch (FileNotFoundException e) {
                 throw new FileNotFoundException("Could not open output file: " + e.getMessage());
             }
@@ -547,9 +551,7 @@ public class JObfImpl {
             JObf.log.info("Writing classes...");
 
             for (Map.Entry<String, byte[]> stringEntry : toWrite.entrySet()) {
-                ZipEntry newEntry = new ZipEntry(stringEntry.getKey());
-                outJar.putNextEntry(newEntry);
-                outJar.write(stringEntry.getValue());
+                writeEntry(outJar, stringEntry.getKey(), stringEntry.getValue(), stored);
             }
 
             JObf.log.info("... Finished after " + Utils.formatTime(System.currentTimeMillis() - startTime));
@@ -574,9 +576,8 @@ public class JObfImpl {
                 }
                 JObf.log.log(Level.FINE, "Copying " + entryName);
 
-                ZipEntry newEntry = new ZipEntry(entryName);
-                outJar.putNextEntry(newEntry);
-                outJar.write(entryData);
+
+                writeEntry(outJar, entryName, entryData, stored);
             }
 
             JObf.log.info("... Finished after " + Utils.formatTime(System.currentTimeMillis() - startTime));
@@ -585,9 +586,7 @@ public class JObfImpl {
 
             if (Packager.INSTANCE.isEnabled()) {
                 JObf.log.info("Packaging...");
-                byte[] decryptorData = Packager.INSTANCE.generateEncryptionClass();
-                outJar.putNextEntry(new ZipEntry(Packager.INSTANCE.getDecryptionClassName() + ".class"));
-                outJar.write(decryptorData);
+                writeEntry(outJar, Packager.INSTANCE.getDecryptionClassName() + ".class", Packager.INSTANCE.generateEncryptionClass(), stored);
                 outJar.closeEntry();
                 JObf.log.info("... Finished after " + Utils.formatTime(System.currentTimeMillis() - startTime));
             }
@@ -623,6 +622,23 @@ public class JObfImpl {
                 }
             }
         }
+    }
+
+    public void writeEntry(ZipOutputStream outJar, String name, byte[] value, boolean stored) throws IOException {
+        ZipEntry newEntry = new ZipEntry(name);
+
+
+        if (stored) {
+            CRC32 crc = new CRC32();
+            crc.update(value);
+
+            newEntry.setSize(value.length);
+            newEntry.setCrc(crc.getValue());
+        }
+
+
+        outJar.putNextEntry(newEntry);
+        outJar.write(value);
     }
 
     public void setWorkDone() {

@@ -22,6 +22,7 @@ public class JObfSettings {
     private BooleanValue useCustomDictionary = new BooleanValue(PROCESSOR_NAME, "Custom dictionary", DeprecationLevel.GOOD, false);
     private FilePathValue classNameDictionary = new FilePathValue(PROCESSOR_NAME, "Class Name dictionary", DeprecationLevel.GOOD, "");
     private FilePathValue nameDictionary = new FilePathValue(PROCESSOR_NAME, "Name dictionary", DeprecationLevel.GOOD, "");
+    private BooleanValue useStore = new BooleanValue(PROCESSOR_NAME, "Use STORE instead of DEFLATE (For e.g. SpringBoot)", DeprecationLevel.GOOD, false);
 
     public BooleanValue getUseCustomDictionary() {
         return useCustomDictionary;
@@ -37,6 +38,10 @@ public class JObfSettings {
 
     public StringValue getGeneratorChars() {
         return generatorChars;
+    }
+
+    public BooleanValue getUseStore() {
+        return useStore;
     }
 }
 

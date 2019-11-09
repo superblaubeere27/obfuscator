@@ -148,6 +148,9 @@ public class NameUtils {
     }
 
     public static String generateLocalVariableName() {
+        if (localVars == 0) {
+            localVars = Short.MAX_VALUE;
+        }
         return Utils.convertToBase(localVars--, chars);
     }
 
