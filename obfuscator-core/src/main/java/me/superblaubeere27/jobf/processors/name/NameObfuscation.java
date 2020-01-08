@@ -291,7 +291,7 @@ public class NameObfuscation implements INameObfuscationProcessor {
     }
 
     private boolean isMethodExcluded(String owner, MethodWrapper methodWrapper) {
-        String str = owner + '.' + methodWrapper.originalName;
+        String str = owner + '/' + methodWrapper.originalName;
 
         for (Pattern excludedMethodsPattern : excludedMethodsPatterns) {
             if (excludedMethodsPattern.matcher(str).matches()) {
@@ -303,7 +303,7 @@ public class NameObfuscation implements INameObfuscationProcessor {
     }
 
     private boolean isFieldExcluded(String owner, FieldWrapper methodWrapper) {
-        String str = owner + '.' + methodWrapper.originalName;
+        String str = owner + '/' + methodWrapper.originalName;
 
         for (Pattern excludedMethodsPattern : excludedFieldsPatterns) {
             if (excludedMethodsPattern.matcher(str).matches()) {
