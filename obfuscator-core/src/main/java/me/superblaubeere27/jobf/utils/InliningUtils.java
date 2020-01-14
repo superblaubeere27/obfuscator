@@ -204,8 +204,8 @@ public class InliningUtils {
         if (Modifier.isAbstract(node.access) || Modifier.isNative(node.access)) return false;
         if (Modifier.isInterface(clazz.access)) return false;
 
-        if (node.instructions.size() < 2) return false;
-        if (node.tryCatchBlocks.size() > 0) return false;
+        if (node.instructions.size() == 0) return false;
+//        if (node.tryCatchBlocks.size() > 0) return false;
 
         boolean ok = true;
 
@@ -215,10 +215,6 @@ public class InliningUtils {
 //                break;
 //            }
             if (abstractInsnNode instanceof MethodInsnNode) {
-                if (abstractInsnNode.getOpcode() == Opcodes.INVOKESPECIAL && !((MethodInsnNode) abstractInsnNode).name.startsWith("<")) {
-                    ok = false;
-                    break;
-                }
                 ClassNode lookup = Utils.lookupClass(((MethodInsnNode) abstractInsnNode).owner);
 
                 if (lookup == null) {

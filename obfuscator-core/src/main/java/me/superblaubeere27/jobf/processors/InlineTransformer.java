@@ -20,9 +20,11 @@ import me.superblaubeere27.jobf.utils.NodeUtils;
 import me.superblaubeere27.jobf.utils.Utils;
 import me.superblaubeere27.jobf.utils.values.DeprecationLevel;
 import me.superblaubeere27.jobf.utils.values.EnabledValue;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 import org.objectweb.asm.tree.analysis.*;
 
+import java.lang.reflect.Modifier;
 import java.util.*;
 
 public class InlineTransformer implements IClassTransformer {
@@ -80,6 +82,7 @@ public class InlineTransformer implements IClassTransformer {
 
                         if (lookupMethod == null
 //                                || (lookupMethod.instructions.size() > 100)
+                                || (Modifier.isFinal(lookupMethod.access) || insnNode.getOpcode() != Opcodes.INVOKESPECIAL) && insnNode.getOpcode() != Opcodes.INVOKESTATIC
                                 || !InliningUtils.canInlineMethod(node, lookupClass, lookupMethod))
                             continue;
 
