@@ -63,11 +63,11 @@ public class CrasherTransformer implements IClassTransformer {
         if (emptyAnnotation.getObject()) {
             node.methods.forEach(method -> {
 
-                if (method.invisibleAnnotations == null)
-                    method.invisibleAnnotations = new ArrayList<>();
+                if (method.annotations == null)
+                    method.annotations = new ArrayList<>();
 
                 for (int i = 0; i < 50; i++) {
-                    method.invisibleAnnotations.add(new AnnotationNode(EMPTY_STRINGS));
+                    method.annotations.add(new AnnotationNode(EMPTY_STRINGS));
                 }
             });
         }
