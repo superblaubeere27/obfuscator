@@ -14,6 +14,7 @@ import me.superblaubeere27.jobf.JObf;
 import me.superblaubeere27.jobf.JObfImpl;
 import me.superblaubeere27.jobf.utils.ClassTree;
 import me.superblaubeere27.jobf.utils.NameUtils;
+import me.superblaubeere27.jobf.utils.Utils;
 import me.superblaubeere27.jobf.utils.values.BooleanValue;
 import me.superblaubeere27.jobf.utils.values.DeprecationLevel;
 import me.superblaubeere27.jobf.utils.values.EnabledValue;
@@ -34,18 +35,19 @@ import java.util.logging.Level;
 import java.util.regex.Pattern;
 
 public class NameObfuscation implements INameObfuscationProcessor {
-    private static String PROCESSOR_NAME = "NameObfuscation";
-    private static Random random = new Random();
-    private EnabledValue enabled = new EnabledValue(PROCESSOR_NAME, DeprecationLevel.OK, false);
-    private StringValue excludedClasses = new StringValue(PROCESSOR_NAME, "Excluded classes", null, DeprecationLevel.GOOD, "me.name.Class\nme.name.*\nio.netty.**", 5);
-    private StringValue excludedMethods = new StringValue(PROCESSOR_NAME, "Excluded methods", null, DeprecationLevel.GOOD, "me.name.Class.method\nme.name.Class**\nme.name.Class.*", 5);
-    private StringValue excludedFields = new StringValue(PROCESSOR_NAME, "Excluded fields", null, DeprecationLevel.GOOD, "me.name.Class.field\nme.name.Class.*\nme.name.**", 5);
-    private BooleanValue shouldPackage = new BooleanValue(PROCESSOR_NAME, "Package", DeprecationLevel.OK, false);
-    private StringValue newPackage = new StringValue(PROCESSOR_NAME, "New Packages", null, DeprecationLevel.GOOD, "", 5);
+    private static final String PROCESSOR_NAME = "NameObfuscation";
+    private static final Random random = new Random();
+    private final EnabledValue enabled = new EnabledValue(PROCESSOR_NAME, DeprecationLevel.OK, false);
+    private final StringValue excludedClasses = new StringValue(PROCESSOR_NAME, "Excluded classes", null, DeprecationLevel.GOOD, "me.name.Class\nme.name.*\nio.netty.**", 5);
+    private final StringValue excludedMethods = new StringValue(PROCESSOR_NAME, "Excluded methods", null, DeprecationLevel.GOOD, "me.name.Class.method\nme.name.Class**\nme.name.Class.*", 5);
+    private final StringValue excludedFields = new StringValue(PROCESSOR_NAME, "Excluded fields", null, DeprecationLevel.GOOD, "me.name.Class.field\nme.name.Class.*\nme.name.**", 5);
+    private final BooleanValue shouldPackage = new BooleanValue(PROCESSOR_NAME, "Package", DeprecationLevel.OK, false);
+    private final StringValue newPackage = new StringValue(PROCESSOR_NAME, "New Packages", null, DeprecationLevel.GOOD, "", 5);
+    private final BooleanValue acceptMissingLibraries = new BooleanValue(PROCESSOR_NAME, "Accept Missing Libraries", DeprecationLevel.GOOD, false);
     private List<String> packageNames;
-    private List<Pattern> excludedClassesPatterns = new ArrayList<>();
-    private List<Pattern> excludedMethodsPatterns = new ArrayList<>();
-    private List<Pattern> excludedFieldsPatterns = new ArrayList<>();
+    private final List<Pattern> excludedClassesPatterns = new ArrayList<>();
+    private final List<Pattern> excludedMethodsPatterns = new ArrayList<>();
+    private final List<Pattern> excludedFieldsPatterns = new ArrayList<>();
 
     public void setupPackages() {
         if (shouldPackage.getObject()) {
@@ -105,10 +107,10 @@ public class NameObfuscation implements INameObfuscationProcessor {
 
                 classWrappers.add(cw);
 
-                JObfImpl.INSTANCE.buildHierarchy(cw, null);
+                JObfImpl.INSTANCE.buildHierarchy(cw, null, acceptMissingLibraries.getObject());
             }
 
-            JObf.log.info("Finished building hierarchy");
+            JObf.log.info("... Finished building hierarchy");
 
             long current = System.currentTimeMillis();
             JObf.log.info("Generating mappings...");
@@ -191,7 +193,7 @@ public class NameObfuscation implements INameObfuscationProcessor {
 //        }
 
 
-            JObf.log.info(String.format("Finished generating mappings (%dms)", (System.currentTimeMillis() - current)));
+            JObf.log.info(String.format("... Finished generating mappings (%s)", Utils.formatTime(System.currentTimeMillis() - current)));
             JObf.log.info("Applying mappings...");
 
             current = System.currentTimeMillis();
@@ -242,7 +244,7 @@ public class NameObfuscation implements INameObfuscationProcessor {
                 JObfImpl.INSTANCE.getClassPath().put(classWrapper.classNode.name, classWrapper);
             }
 
-            JObf.log.info(String.format("Finished applying mappings (%dms)", (System.currentTimeMillis() - current)));
+            JObf.log.info(String.format("... Finished applying mappings (%s)", Utils.formatTime(System.currentTimeMillis() - current)));
         } finally {
             excludedClassesPatterns.clear();
             excludedMethodsPatterns.clear();
@@ -316,9 +318,16 @@ public class NameObfuscation implements INameObfuscationProcessor {
 
     private boolean canRenameMethodTree(HashMap<String, String> mappings, HashSet<ClassTree> visited, MethodWrapper methodWrapper, String owner) {
         ClassTree tree = JObfImpl.INSTANCE.getTree(owner);
+
+        if (tree == null)
+            return false;
+
         if (!visited.contains(tree)) {
             visited.add(tree);
 
+            if (tree.missingSuperClass) {
+                return false;
+            }
             if (Modifier.isNative(methodWrapper.methodNode.access)) {
                 return false;
             }
@@ -367,8 +376,17 @@ public class NameObfuscation implements INameObfuscationProcessor {
 
     private boolean canRenameFieldTree(HashMap<String, String> mappings, HashSet<ClassTree> visited, FieldWrapper fieldWrapper, String owner) {
         ClassTree tree = JObfImpl.INSTANCE.getTree(owner);
+
+        if (tree == null)
+            return false;
+
         if (!visited.contains(tree)) {
             visited.add(tree);
+
+            if (tree.missingSuperClass) {
+                return false;
+            }
+
             if (mappings.containsKey(owner + '.' + fieldWrapper.originalName + '.' + fieldWrapper.originalDescription))
                 return true;
             if (!fieldWrapper.owner.originalName.equals(owner) && tree.classWrapper.libraryNode) {

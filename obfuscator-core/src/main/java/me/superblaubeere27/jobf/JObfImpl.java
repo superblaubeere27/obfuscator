@@ -51,7 +51,7 @@ public class JObfImpl {
     private static List<IPreClassTransformer> preProcessors;
     public JObfScript script;
     private boolean mainClassChanged;
-    private List<INameObfuscationProcessor> nameObfuscationProcessors = new ArrayList<>();
+    private final List<INameObfuscationProcessor> nameObfuscationProcessors = new ArrayList<>();
     private String mainClass;
     private Map<String, ClassWrapper> classPath = new HashMap<>();
     private Map<String, ClassTree> hierarchy = new HashMap<>();
@@ -59,7 +59,7 @@ public class JObfImpl {
     private List<File> libraryFiles;
     private int computeMode;
     private boolean invokeDynamic;
-    private JObfSettings settings = new JObfSettings();
+    private final JObfSettings settings = new JObfSettings();
     private int threadCount = Math.max(1, Runtime.getRuntime().availableProcessors());
 
 
@@ -86,29 +86,57 @@ public class JObfImpl {
     public ClassTree getTree(String ref) {
         if (!hierarchy.containsKey(ref)) {
             ClassWrapper wrapper = classPath.get(ref);
-            buildHierarchy(wrapper, null);
+
+            if (wrapper == null)
+                return null;
+
+            buildHierarchy(wrapper, null, false);
         }
 
         return hierarchy.get(ref);
     }
 
-    public void buildHierarchy(ClassWrapper classWrapper, ClassWrapper sub) {
+    public void buildHierarchy(ClassWrapper classWrapper, ClassWrapper sub, boolean acceptMissingClass) {
         if (hierarchy.get(classWrapper.classNode.name) == null) {
             ClassTree tree = new ClassTree(classWrapper);
             if (classWrapper.classNode.superName != null) {
                 tree.parentClasses.add(classWrapper.classNode.superName);
                 ClassWrapper superClass = classPath.get(classWrapper.classNode.superName);
-                if (superClass == null)
+
+                if (superClass == null && !acceptMissingClass)
                     throw new MissingClassException(classWrapper.classNode.superName + " (referenced in " + classWrapper.classNode.name + ") is missing in the classPath.");
-                buildHierarchy(superClass, classWrapper);
+                else if (superClass == null) {
+                    tree.missingSuperClass = true;
+
+                    JObf.log.warning("Missing class: " + classWrapper.classNode.superName + " (No methods of subclasses will be remapped)");
+                } else {
+                    buildHierarchy(superClass, classWrapper, acceptMissingClass);
+
+                    // Inherit the missingSuperClass state
+                    if (hierarchy.get(classWrapper.classNode.superName).missingSuperClass) {
+                        tree.missingSuperClass = true;
+                    }
+                }
             }
             if (classWrapper.classNode.interfaces != null && !classWrapper.classNode.interfaces.isEmpty()) {
                 for (String s : classWrapper.classNode.interfaces) {
                     tree.parentClasses.add(s);
                     ClassWrapper interfaceClass = classPath.get(s);
-                    if (interfaceClass == null)
+
+                    if (interfaceClass == null && !acceptMissingClass)
                         throw new MissingClassException(s + " (referenced in " + classWrapper.classNode.name + ") is missing in the classPath.");
-                    buildHierarchy(interfaceClass, classWrapper);
+                    else if (interfaceClass == null) {
+                        tree.missingSuperClass = true;
+
+                        JObf.log.warning("Missing interface class: " + s + " (No methods of subclasses will be remapped)");
+                    } else {
+                        buildHierarchy(interfaceClass, classWrapper, acceptMissingClass);
+
+                        // Inherit the missingSuperClass state
+                        if (hierarchy.get(s).missingSuperClass) {
+                            tree.missingSuperClass = true;
+                        }
+                    }
                 }
             }
             hierarchy.put(classWrapper.classNode.name, tree);

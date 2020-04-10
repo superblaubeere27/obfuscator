@@ -37,6 +37,12 @@ public class ClassTree {
     public Set<String> subClasses = new HashSet<>();
 
     /**
+     * If one of the super-classes is missing this is set to true.
+     * It prevents methods from being remapped.
+     */
+    public boolean missingSuperClass;
+
+    /**
      * Creates a ClassTree object.
      *
      * @param classWrapper the ClassWraper attached to this ClassTree.
