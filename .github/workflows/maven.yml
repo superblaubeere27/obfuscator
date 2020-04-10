@@ -19,4 +19,4 @@ jobs:
         # Artifact name
         name: obfuscator
         # Directory containing files to upload
-        path: target
+        path: obfuscator-core/target
