@@ -17,6 +17,6 @@ jobs:
       uses: actions/upload-artifact@v1.0.0
       with:
         # Artifact name
-        name: obfuscator
+        name: obfuscator.jar
         # Directory containing files to upload
-        path: obfuscator-core/target
+        path: obfuscator-core/target/obfuscator-core-1.9.3-SNAPSHOT.jar
