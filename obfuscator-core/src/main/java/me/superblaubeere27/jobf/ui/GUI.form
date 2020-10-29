@@ -312,7 +312,7 @@
                 <properties/>
                 <border type="none"/>
                 <children>
-                  <component id="34365" class="javax.swing.JTextArea" binding="logArea">
+                  <component id="34365" class="javax.swing.JTextPane" binding="logArea">
                     <constraints/>
                     <properties>
                       <editable value="false"/>

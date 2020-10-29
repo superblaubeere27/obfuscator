@@ -10,13 +10,19 @@
 
 package me.superblaubeere27.jobf.utils.values;
 
-import com.google.gson.*;
-import me.superblaubeere27.jobf.JObf;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
+
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j(topic = "obfuscator")
 public class ConfigManager {
     private static Gson gson = new Gson();
 
@@ -115,7 +121,7 @@ public class ConfigManager {
                         value.setObject(moduleJson.get(value.getName()).getAsString());
                     }
                 } catch (Throwable e) {
-                    JObf.log.severe(value.getName() + ": " + e);
+                    log.error(value.getName(), e);
                 }
             }
         }

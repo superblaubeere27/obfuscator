@@ -10,7 +10,18 @@
 
 package me.superblaubeere27.jobf.processors.name;
 
-import me.superblaubeere27.jobf.JObf;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
+
+import lombok.extern.slf4j.Slf4j;
 import me.superblaubeere27.jobf.JObfImpl;
 import me.superblaubeere27.jobf.utils.ClassTree;
 import me.superblaubeere27.jobf.utils.NameUtils;
@@ -27,13 +38,7 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import java.lang.reflect.Modifier;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
-import java.util.regex.Pattern;
-
+@Slf4j(topic = "obfuscator")
 public class NameObfuscation implements INameObfuscationProcessor {
     private static final String PROCESSOR_NAME = "NameObfuscation";
     private static final Random random = new Random();
@@ -100,7 +105,7 @@ public class NameObfuscation implements INameObfuscationProcessor {
                 excludedFieldsPatterns.add(compileExcludePattern(s));
             }
 
-            JObf.log.info("Building Hierarchy...");
+            log.info("Building Hierarchy...");
 
             for (ClassNode value : nodes.values()) {
                 ClassWrapper cw = new ClassWrapper(value, false, new byte[0]);
@@ -110,10 +115,10 @@ public class NameObfuscation implements INameObfuscationProcessor {
                 JObfImpl.INSTANCE.buildHierarchy(cw, null, acceptMissingLibraries.getObject());
             }
 
-            JObf.log.info("... Finished building hierarchy");
+            log.info("... Finished building hierarchy");
 
             long current = System.currentTimeMillis();
-            JObf.log.info("Generating mappings...");
+            log.info("Generating mappings...");
 
             NameUtils.setup();
 
@@ -166,7 +171,7 @@ public class NameObfuscation implements INameObfuscationProcessor {
                 });
 
                 if (!excluded && nativeMethodsFound.get()) {
-                    JObf.log.info("Automatically excluded " + classWrapper.originalName + " because it has native methods in it.");
+                    log.info("Automatically excluded " + classWrapper.originalName + " because it has native methods in it.");
                 }
 
                 if (excluded || nativeMethodsFound.get()) return;
@@ -193,8 +198,8 @@ public class NameObfuscation implements INameObfuscationProcessor {
 //        }
 
 
-            JObf.log.info(String.format("... Finished generating mappings (%s)", Utils.formatTime(System.currentTimeMillis() - current)));
-            JObf.log.info("Applying mappings...");
+            log.info(String.format("... Finished generating mappings (%s)", Utils.formatTime(System.currentTimeMillis() - current)));
+            log.info("Applying mappings...");
 
             current = System.currentTimeMillis();
 
@@ -244,7 +249,7 @@ public class NameObfuscation implements INameObfuscationProcessor {
                 JObfImpl.INSTANCE.getClassPath().put(classWrapper.classNode.name, classWrapper);
             }
 
-            JObf.log.info(String.format("... Finished applying mappings (%s)", Utils.formatTime(System.currentTimeMillis() - current)));
+            log.info(String.format("... Finished applying mappings (%s)", Utils.formatTime(System.currentTimeMillis() - current)));
         } finally {
             excludedClassesPatterns.clear();
             excludedMethodsPatterns.clear();
@@ -284,7 +289,7 @@ public class NameObfuscation implements INameObfuscationProcessor {
 
         for (Pattern excludedMethodsPattern : excludedClassesPatterns) {
             if (excludedMethodsPattern.matcher(str).matches()) {
-                JObf.log.log(Level.FINEST, "Class '" + classWrapper.classNode.name + "' was excluded from name obfuscation by regex '" + excludedMethodsPattern.pattern() + "'");
+                log.info("Class '" + classWrapper.classNode.name + "' was excluded from name obfuscation by regex '" + excludedMethodsPattern.pattern() + "'");
                 return true;
             }
         }
