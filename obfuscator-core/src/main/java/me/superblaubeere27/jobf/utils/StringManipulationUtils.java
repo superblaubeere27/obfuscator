@@ -12,7 +12,8 @@ package me.superblaubeere27.jobf.utils;
 
 import java.util.Random;
 
-public class StringUtils {
+public class StringManipulationUtils
+{
 
     private static final Random random = new Random();
 

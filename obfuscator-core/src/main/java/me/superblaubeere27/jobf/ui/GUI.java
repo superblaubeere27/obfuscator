@@ -41,7 +41,7 @@ import java.util.List;
 import java.util.*;
 
 public class GUI extends JFrame {
-    public JTextArea logArea;
+    public JTextPane logArea;
     private JTabbedPane tabbedPane1;
     private JPanel panel1;
     private JTextField inputTextField;
@@ -535,7 +535,7 @@ public class GUI extends JFrame {
         tabbedPane1.addTab(ResourceBundle.getBundle("strings").getString("log"), panel9);
         final JScrollPane scrollPane2 = new JScrollPane();
         panel9.add(scrollPane2, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
-        logArea = new JTextArea();
+        logArea = new JTextPane();
         logArea.setEditable(false);
         scrollPane2.setViewportView(logArea);
         autoScroll = new JCheckBox();

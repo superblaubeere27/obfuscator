@@ -17,7 +17,7 @@ import me.superblaubeere27.jobf.ProcessorCallback;
 import me.superblaubeere27.jobf.processors.encryption.string.*;
 import me.superblaubeere27.jobf.utils.NameUtils;
 import me.superblaubeere27.jobf.utils.NodeUtils;
-import me.superblaubeere27.jobf.utils.StringUtils;
+import me.superblaubeere27.jobf.utils.StringManipulationUtils;
 import me.superblaubeere27.jobf.utils.values.BooleanValue;
 import me.superblaubeere27.jobf.utils.values.DeprecationLevel;
 import me.superblaubeere27.jobf.utils.values.EnabledValue;
@@ -245,7 +245,7 @@ public class StringEncryptionTransformer implements IClassTransformer {
                     toAdd.add(new FieldInsnNode(Opcodes.GETSTATIC, node.name, stringArrayName, "[Ljava/lang/String;"));
                     toAdd.add(NodeUtils.generateIntPush(j));
 //                toAdd.add(getInstructions(integerList.get(j)));
-                    String key = StringUtils.generateString(5);
+                    String key = StringManipulationUtils.generateString(5);
                     toAdd.add(new LdcInsnNode(processor.encrypt(arrayMap.get(j), key)));
                     toAdd.add(new LdcInsnNode(key));
 //                    System.out.println(name);

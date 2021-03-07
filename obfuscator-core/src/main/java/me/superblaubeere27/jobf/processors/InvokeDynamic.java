@@ -10,9 +10,44 @@
 
 package me.superblaubeere27.jobf.processors;
 
+import static org.objectweb.asm.Opcodes.AALOAD;
+import static org.objectweb.asm.Opcodes.ACONST_NULL;
+import static org.objectweb.asm.Opcodes.ALOAD;
+import static org.objectweb.asm.Opcodes.ARETURN;
+import static org.objectweb.asm.Opcodes.ASTORE;
+import static org.objectweb.asm.Opcodes.DUP;
+import static org.objectweb.asm.Opcodes.GETSTATIC;
+import static org.objectweb.asm.Opcodes.GOTO;
+import static org.objectweb.asm.Opcodes.H_INVOKESTATIC;
+import static org.objectweb.asm.Opcodes.ICONST_0;
+import static org.objectweb.asm.Opcodes.ICONST_1;
+import static org.objectweb.asm.Opcodes.ICONST_2;
+import static org.objectweb.asm.Opcodes.ICONST_3;
+import static org.objectweb.asm.Opcodes.ICONST_4;
+import static org.objectweb.asm.Opcodes.ICONST_5;
+import static org.objectweb.asm.Opcodes.IF_ICMPGT;
+import static org.objectweb.asm.Opcodes.IF_ICMPNE;
+import static org.objectweb.asm.Opcodes.ILOAD;
+import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
+import static org.objectweb.asm.Opcodes.INVOKESTATIC;
+import static org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
+import static org.objectweb.asm.Opcodes.ISTORE;
+import static org.objectweb.asm.Opcodes.NEW;
+
+import java.lang.invoke.CallSite;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+
+import lombok.extern.slf4j.Slf4j;
 import me.superblaubeere27.annotations.ObfuscationTransformer;
 import me.superblaubeere27.jobf.IClassTransformer;
-import me.superblaubeere27.jobf.JObf;
 import me.superblaubeere27.jobf.ProcessorCallback;
 import me.superblaubeere27.jobf.utils.NameUtils;
 import me.superblaubeere27.jobf.utils.NodeUtils;
@@ -23,16 +58,19 @@ import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.*;
+import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldInsnNode;
+import org.objectweb.asm.tree.FieldNode;
+import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.InvokeDynamicInsnNode;
+import org.objectweb.asm.tree.LdcInsnNode;
+import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TypeInsnNode;
 
-import java.lang.invoke.CallSite;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
-import java.lang.reflect.Modifier;
-import java.util.*;
-
-import static org.objectweb.asm.Opcodes.*;
-
+@Slf4j(topic = "obfuscator")
 public class InvokeDynamic implements IClassTransformer {
     private static final String PROCESSOR_NAME = "InvokeDynamic";
     private static Random random = new Random();
@@ -376,7 +414,7 @@ public class InvokeDynamic implements IClassTransformer {
             return;
         }
         if (classNode.version == Opcodes.V1_1 || classNode.version < Opcodes.V1_4) {
-            JObf.log.warning("!!! WARNING !!! " + classNode.name + "'s lang level is too low (VERSION < V1_4)");
+            log.warn("!!! WARNING !!! " + classNode.name + "'s lang level is too low (VERSION < V1_4)");
             return;
         }
 
@@ -485,7 +523,7 @@ public class InvokeDynamic implements IClassTransformer {
                     if (owner != null) field = Utils.getField(owner, fieldInsnNode.name);
 
                     if (field == null) {
-                        JObf.log.warning("Field " + fieldInsnNode.owner + "." + fieldInsnNode.name + " wasn't found. Please add it as library");
+                        log.warn("Field " + fieldInsnNode.owner + "." + fieldInsnNode.name + " wasn't found. Please add it as library");
                         continue;
                     }
                     if (Modifier.isFinal(field.access)) {

@@ -10,8 +10,49 @@
 
 package me.superblaubeere27.jobf;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.zip.CRC32;
+import java.util.zip.Deflater;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
+
 import com.google.common.io.ByteStreams;
-import me.superblaubeere27.jobf.processors.*;
+import lombok.extern.slf4j.Slf4j;
+import me.superblaubeere27.jobf.processors.CrasherTransformer;
+import me.superblaubeere27.jobf.processors.HWIDProtection;
+import me.superblaubeere27.jobf.processors.HideMembers;
+import me.superblaubeere27.jobf.processors.InlineTransformer;
+import me.superblaubeere27.jobf.processors.InvokeDynamic;
+import me.superblaubeere27.jobf.processors.LineNumberRemover;
+import me.superblaubeere27.jobf.processors.NumberObfuscationTransformer;
+import me.superblaubeere27.jobf.processors.ReferenceProxy;
+import me.superblaubeere27.jobf.processors.ShuffleMembersTransformer;
+import me.superblaubeere27.jobf.processors.StaticInitializionTransformer;
+import me.superblaubeere27.jobf.processors.StringEncryptionTransformer;
 import me.superblaubeere27.jobf.processors.flowObfuscation.FlowObfuscator;
 import me.superblaubeere27.jobf.processors.name.ClassWrapper;
 import me.superblaubeere27.jobf.processors.name.INameObfuscationProcessor;
@@ -28,21 +69,13 @@ import me.superblaubeere27.jobf.utils.scheduler.Scheduler;
 import me.superblaubeere27.jobf.utils.script.JObfScript;
 import me.superblaubeere27.jobf.utils.values.Configuration;
 import me.superblaubeere27.jobf.utils.values.ValueManager;
+import org.apache.commons.lang3.StringUtils;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ModifiedClassWriter;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FrameNode;
 
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
-import java.util.stream.Collectors;
-import java.util.zip.*;
-
+@Slf4j(topic = "obfuscator")
 public class JObfImpl {
     public static final JObfImpl INSTANCE = new JObfImpl();
     public static List<IClassTransformer> processors;
@@ -108,7 +141,7 @@ public class JObfImpl {
                 else if (superClass == null) {
                     tree.missingSuperClass = true;
 
-                    JObf.log.warning("Missing class: " + classWrapper.classNode.superName + " (No methods of subclasses will be remapped)");
+                    log.warn("Missing class: " + classWrapper.classNode.superName + " (No methods of subclasses will be remapped)");
                 } else {
                     buildHierarchy(superClass, classWrapper, acceptMissingClass);
 
@@ -128,7 +161,7 @@ public class JObfImpl {
                     else if (interfaceClass == null) {
                         tree.missingSuperClass = true;
 
-                        JObf.log.warning("Missing interface class: " + s + " (No methods of subclasses will be remapped)");
+                        log.warn("Missing interface class: " + s + " (No methods of subclasses will be remapped)");
                     } else {
                         buildHierarchy(interfaceClass, classWrapper, acceptMissingClass);
 
@@ -193,12 +226,12 @@ public class JObfImpl {
 
             for (File file : libraryFiles) {
                 if (file.isFile()) {
-                    JObf.log.info("Loading " + file.getAbsolutePath() + " (" + (i++ * 100 / libraryFiles.size()) + "%)");
+                    log.info("Loading " + file.getAbsolutePath() + " (" + (i++ * 100 / libraryFiles.size()) + "%)");
                     byteList.addAll(loadClasspathFile(file));
 //                    classPath.putAll(loadClasspathFile(file));
                 } else {
                     Files.walk(file.toPath()).map(Path::toFile).filter(f -> f.getName().endsWith(".jar") || f.getName().endsWith(".zip") || f.getName().endsWith(".jmod")).forEach(f -> {
-                        JObf.log.info("Loading " + f.getName() + " (from " + file.getAbsolutePath() + ") to memory");
+                        log.info("Loading " + f.getName() + " (from " + file.getAbsolutePath() + ") to memory");
                         try {
                             byteList.addAll(loadClasspathFile(f));
 //                            classPath.putAll(loadClasspathFile(f));
@@ -209,8 +242,8 @@ public class JObfImpl {
                 }
             }
 
-            JObf.log.info("Read " + byteList.size() + " class files to memory");
-            JObf.log.info("Parsing class files...");
+            log.info("Read " + byteList.size() + " class files to memory");
+            log.info("Parsing class files...");
 
             ScheduledRunnable runnable = () -> {
                 Map<String, ClassWrapper> map = new HashMap<>();
@@ -315,9 +348,9 @@ public class JObfImpl {
         NameUtils.setup();
 
         try {
-            script = new JObfScript(config.getScript() == null ? "" : config.getScript());
+            script = StringUtils.isBlank(config.getScript()) ? null : new JObfScript(config.getScript());
         } catch (Exception e) {
-            JObf.log.severe("Failed to load script");
+            log.error("Failed to load script", e);
             e.printStackTrace();
             return;
         }
@@ -327,7 +360,7 @@ public class JObfImpl {
         long startTime = System.currentTimeMillis();
 
         try {
-            JObf.log.info("Loading classpath...");
+            log.info("Loading classpath...");
             loadClasspath();
             try {
                 inJar = new ZipInputStream(new BufferedInputStream(new FileInputStream(config.getInput())));
@@ -348,11 +381,11 @@ public class JObfImpl {
             }
             setMainClass(null);
 
-            JObf.log.info("... Finished after " + Utils.formatTime(System.currentTimeMillis() - startTime));
+            log.info("... Finished after " + Utils.formatTime(System.currentTimeMillis() - startTime));
 
             startTime = System.currentTimeMillis();
 
-            JObf.log.info("Reading input...");
+            log.info("Reading input...");
 
             HashMap<String, byte[]> classDataMap = new HashMap<>();
 
@@ -395,7 +428,7 @@ public class JObfImpl {
                         classes.put(entryName, cn);
                         classDataMap.put(entryName, entryData);
                     } catch (Exception e) {
-                        JObf.log.warning("Failed to read class " + entryName);
+                        log.warn("Failed to read class " + entryName);
                         e.printStackTrace();
                         files.put(entryName, entryData);
                     }
@@ -431,12 +464,11 @@ public class JObfImpl {
                 Packager.INSTANCE.init();
             }
 
-            JObf.log.info("... Finished after " + Utils.formatTime(System.currentTimeMillis() - startTime));
+            log.info("... Finished after " + Utils.formatTime(System.currentTimeMillis() - startTime));
 
             startTime = System.currentTimeMillis();
 
-
-            JObf.log.info("Transforming with " + threadCount + " threads...");
+            log.info("Transforming with " + threadCount + " threads...");
 
             final LinkedList<Map.Entry<String, ClassNode>> classQueue = new LinkedList<>(classes.entrySet());
 
@@ -472,7 +504,7 @@ public class JObfImpl {
 
 
                                     if (script == null || script.isObfuscatorEnabled(cn)) {
-                                        JObf.log.log(Level.FINE, String.format("[%s] (%s/%s), Processing %s", Thread.currentThread().getName(), processed, classes.size(), entryName));
+                                        log.info(String.format("[%s] (%s/%s), Processing %s", Thread.currentThread().getName(), processed, classes.size(), entryName));
 
                                         for (IClassTransformer proc : processors) {
                                             try {
@@ -482,7 +514,7 @@ public class JObfImpl {
                                             }
                                         }
                                     } else {
-                                        JObf.log.log(Level.FINE, String.format("[%s] (%s/%s), Skipping %s", Thread.currentThread().getName(), processed, classes.size(), entryName));
+                                        log.info(String.format("[%s] (%s/%s), Skipping %s", Thread.currentThread().getName(), processed, classes.size(), entryName));
                                     }
 
                                     if (callback.isForceComputeFrames())
@@ -492,7 +524,7 @@ public class JObfImpl {
                                     int mode = computeMode
                                             | (callback.isForceComputeFrames() ? ModifiedClassWriter.COMPUTE_FRAMES : 0);
 
-                                    JObf.log.log(Level.FINE, String.format("[%s] (%s/%s), Writing (computeMode = %s) %s", Thread.currentThread().getName(), processed, classes.size(), mode, entryName));
+                                    log.info(String.format("[%s] (%s/%s), Writing (computeMode = %s) %s", Thread.currentThread().getName(), processed, classes.size(), mode, entryName));
 
                                     ModifiedClassWriter writer = new ModifiedClassWriter(
                                             mode
@@ -572,21 +604,21 @@ public class JObfImpl {
                 Thread.sleep(100);
             }
 
-            JObf.log.info("... Finished after " + Utils.formatTime(System.currentTimeMillis() - startTime));
+            log.info("... Finished after " + Utils.formatTime(System.currentTimeMillis() - startTime));
 
             startTime = System.currentTimeMillis();
 
-            JObf.log.info("Writing classes...");
+            log.info("Writing classes...");
 
             for (Map.Entry<String, byte[]> stringEntry : toWrite.entrySet()) {
                 writeEntry(outJar, stringEntry.getKey(), stringEntry.getValue(), stored);
             }
 
-            JObf.log.info("... Finished after " + Utils.formatTime(System.currentTimeMillis() - startTime));
+            log.info("... Finished after " + Utils.formatTime(System.currentTimeMillis() - startTime));
 
             startTime = System.currentTimeMillis();
 
-            JObf.log.info("Writing resources...");
+            log.info("Writing resources...");
 
             for (Map.Entry<String, byte[]> stringEntry : files.entrySet()) {
                 String entryName = stringEntry.getKey();
@@ -597,26 +629,26 @@ public class JObfImpl {
                         entryData = Utils.replaceMainClass(new String(entryData, StandardCharsets.UTF_8), Packager.INSTANCE.getDecryptionClassName()).getBytes(StandardCharsets.UTF_8);
                     } else if (mainClassChanged) {
                         entryData = Utils.replaceMainClass(new String(entryData, StandardCharsets.UTF_8), mainClass).getBytes(StandardCharsets.UTF_8);
-                        JObf.log.log(Level.FINE, "Replaced Main-Class with " + mainClass);
+                        log.info("Replaced Main-Class with " + mainClass);
                     }
 
-                    JObf.log.log(Level.FINE, "Processed MANIFEST.MF");
+                    log.info("Processed MANIFEST.MF");
                 }
-                JObf.log.log(Level.FINE, "Copying " + entryName);
+                log.info("Copying " + entryName);
 
 
                 writeEntry(outJar, entryName, entryData, stored);
             }
 
-            JObf.log.info("... Finished after " + Utils.formatTime(System.currentTimeMillis() - startTime));
+            log.info("... Finished after " + Utils.formatTime(System.currentTimeMillis() - startTime));
 
             startTime = System.currentTimeMillis();
 
             if (Packager.INSTANCE.isEnabled()) {
-                JObf.log.info("Packaging...");
+                log.info("Packaging...");
                 writeEntry(outJar, Packager.INSTANCE.getDecryptionClassName() + ".class", Packager.INSTANCE.generateEncryptionClass(), stored);
                 outJar.closeEntry();
-                JObf.log.info("... Finished after " + Utils.formatTime(System.currentTimeMillis() - startTime));
+                log.info("... Finished after " + Utils.formatTime(System.currentTimeMillis() - startTime));
             }
         } catch (InterruptedException ignored) {
         } finally {
@@ -633,10 +665,10 @@ public class JObfImpl {
 
             if (outJar != null) {
                 try {
-                    JObf.log.info("Finishing...");
+                    log.info("Finishing...");
                     outJar.flush();
                     outJar.close();
-                    JObf.log.info(">>> Processing completed. If you found a bug / if the output is invalid please open an issue at https://github.com/superblaubeere27/obfuscator/issues");
+                    log.info(">>> Processing completed. If you found a bug / if the output is invalid please open an issue at https://github.com/superblaubeere27/obfuscator/issues");
                 } catch (Exception e) {
                     // ignore
                 }

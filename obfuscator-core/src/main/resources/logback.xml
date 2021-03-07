@@ -1,0 +1,56 @@
+<!-- turn debug=true on for logback-test.xml to help debug logging configurations. -->
+<configuration debug="false">
+
+    <!--
+    We prefer logging to console instead of a File. Its very easy
+    to pipe console output to a file and most organizations already
+    have a log rotation setup in place. It can also be faster to use this
+    approach vs using a FileAppender directly
+    -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- encoders are  by default assigned the type
+             ch.qos.logback.classic.encoder.PatternLayoutEncoder -->
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Form -->
+    <appender name="FORM" class="me.superblaubeere27.jobf.ui.Appender" />
+
+
+    <!--
+    Async appenders can drastically speed up logging as well as your application's
+    response time but with some potential drawbacks. Read more at.
+    https://logback.qos.ch/manual/appenders.html#AsyncAppender
+    http://blog.takipi.com/how-to-instantly-improve-your-java-logging-with-7-logback-tweaks/
+
+    Always be sure to test different configurations for yourself. Every
+    application has different requirements.
+     -->
+    <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="FORM" />
+        <appender-ref ref="CONSOLE" />
+        <queueSize>1000</queueSize>
+    </appender>
+
+    <!--
+    We prefer a default setting of WARN and turn on logging explicitly for
+    any packages we care about. INFO is also a good choice. Going lower than INFO
+    may log sensitive data such as passwords or api tokens via HTTP or networking
+    libraries. Remember these defaults impact third party libraries as well.
+
+    Often times the cost of logging is overlooked. Try a simple benchmark of
+    logging in a tight loop a few million iterations vs not logging and see the difference.
+    There are a few ways you can change logging levels on the fly in a running app.
+    This could be a better solution than over logging.
+    -->
+
+    <!-- Turn on debug logging connection pool. -->
+    <logger name="me.superblaubeere27" level="DEBUG" />
+
+    <root level="${logging.level}">
+        <appender-ref ref="ASYNC" />
+    </root>
+
+</configuration>

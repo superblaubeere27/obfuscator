@@ -10,14 +10,16 @@
 
 package me.superblaubeere27.jobf.processors.name;
 
-import me.superblaubeere27.jobf.JObf;
-import me.superblaubeere27.jobf.utils.NameUtils;
-import org.objectweb.asm.commons.Remapper;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import org.objectweb.asm.commons.Remapper;
+
+import lombok.extern.slf4j.Slf4j;
+import me.superblaubeere27.jobf.utils.NameUtils;
+
+@Slf4j(topic = "obfuscator")
 class CustomRemapper extends Remapper {
     private Map<String, String> map = new HashMap<>();
     private Map<String, String> mapReversed = new HashMap<>();
@@ -180,7 +182,7 @@ class CustomRemapper extends Remapper {
         map.put(old, newName);
         mapReversed.put(newName, old);
         NameUtils.mapClass(old, newName);
-        JObf.log.info("Mapped " + old + " to " + newName);
+        log.info("Mapped " + old + " to " + newName);
 //        System.out.println(map(old));
         return true;
     }
