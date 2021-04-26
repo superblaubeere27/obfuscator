@@ -1,11 +1,12 @@
 # Obfuscator [![Build Status](https://travis-ci.org/superblaubeere27/obfuscator.svg?branch=master)](https://travis-ci.org/superblaubeere27/obfuscator) [![Join the chat at https://gitter.im/superblaubeere27/obfuscator](https://badges.gitter.im/superblaubeere27/obfuscator.svg)](https://gitter.im/superblaubeere27/obfuscator?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Donate](https://img.shields.io/badge/patreon-donate-green.svg)](http://patreon.com/superblaubeere27)
 
+If you are interested in stronger obfuscation methods, feel free to take a look at my new project [masxinlingvonta](https://github.com/superblaubeere27/masxinlingvonta) that further obfuscates java bytecode by compiling it to native code.
+
 A Java bytecode obfuscator supporting
 * Flow Obfuscation
 * Line Number Removal
 * Number Obfuscation
-* Optimisation
-* Name Obfuscation (Classes, methods and fields) with custom dictionaries
+* [Unstable] Name Obfuscation (Classes, methods and fields) with custom dictionaries
 * Deobfuscator crasher
 * String Encryption
 * Inner Class Removal
