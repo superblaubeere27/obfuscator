@@ -102,10 +102,10 @@
             <version>${commons-lang3.version}</version>
         </dependency>
         <dependency>
-			<groupId>org.openjdk.nashorn</groupId>
-			<artifactId>nashorn-core</artifactId>
-			<version>${nashorn.version}</version>
-		</dependency>
+            <groupId>org.openjdk.nashorn</groupId>
+            <artifactId>nashorn-core</artifactId>
+            <version>${nashorn.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>com.fifesoft</groupId>
