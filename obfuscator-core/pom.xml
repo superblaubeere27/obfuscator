@@ -45,6 +45,7 @@
         <maven-jar-plugin.version>3.2.0</maven-jar-plugin.version>
         <jcp.version>6.1.4</jcp.version>
         <commons-lang3.version>3.11</commons-lang3.version>
+        <nashorn.version>15.2</nashorn.version>
     </properties>
 
     <dependencies>
@@ -99,6 +100,11 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>${commons-lang3.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjdk.nashorn</groupId>
+            <artifactId>nashorn-core</artifactId>
+            <version>${nashorn.version}</version>
         </dependency>
 
         <dependency>
