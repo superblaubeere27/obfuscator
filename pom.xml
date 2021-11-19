@@ -15,14 +15,14 @@
 
     <groupId>me.superblaubeere27</groupId>
     <artifactId>obfuscator</artifactId>
-    <version>1.9.3-SNAPSHOT</version>
+    <version>1.9.4-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>15</maven.compiler.source>
-        <maven.compiler.target>15</maven.compiler.target>
-        <asm.version>9.1</asm.version>
+        <maven.compiler.source>16</maven.compiler.source>
+        <maven.compiler.target>16</maven.compiler.target>
+        <asm.version>9.2</asm.version>
     </properties>
 
     <modules>

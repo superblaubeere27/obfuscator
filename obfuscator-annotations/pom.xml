@@ -16,7 +16,7 @@
     <parent>
         <groupId>me.superblaubeere27</groupId>
         <artifactId>obfuscator</artifactId>
-        <version>1.9.3-SNAPSHOT</version>
+        <version>1.9.4-SNAPSHOT</version>
     </parent>
 
     <artifactId>obfuscator-annotations</artifactId>
