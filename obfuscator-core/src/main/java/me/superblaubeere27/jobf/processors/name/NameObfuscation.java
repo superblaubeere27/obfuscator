@@ -126,6 +126,7 @@ public class NameObfuscation implements INameObfuscationProcessor {
 
             classWrappers.forEach(classWrapper -> {
                 boolean excluded = this.isClassExcluded(classWrapper);
+                boolean isMainClass = JObfImpl.INSTANCE.getMainClass().replace('.', '/').equals(classWrapper.originalName);
                 AtomicBoolean builtHierarchy = new AtomicBoolean(false);
 
                 for (MethodWrapper method : classWrapper.methods) {
@@ -179,8 +180,14 @@ public class NameObfuscation implements INameObfuscationProcessor {
                 classWrapper.classNode.access &= ~Opcodes.ACC_PRIVATE;
                 classWrapper.classNode.access &= ~Opcodes.ACC_PROTECTED;
                 classWrapper.classNode.access |= Opcodes.ACC_PUBLIC;
+                String obfuscatedClassName = getPackageName() + NameUtils.generateClassName();
+                if (isMainClass) {
+                    JObfImpl.INSTANCE.setMainClass(obfuscatedClassName);
+                    JObfImpl.INSTANCE.mainClassChanged = true;
+                }
 
-                putMapping(mappings, classWrapper.originalName, getPackageName() + NameUtils.generateClassName());
+                putMapping(mappings, classWrapper.originalName, obfuscatedClassName);
+
                 classCounter.incrementAndGet();
             });
 

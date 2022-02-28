@@ -83,7 +83,7 @@ public class JObfImpl {
     public static HashMap<String, byte[]> files = new HashMap<>();
     private static List<IPreClassTransformer> preProcessors;
     public JObfScript script;
-    private boolean mainClassChanged;
+    public boolean mainClassChanged;
     private final List<INameObfuscationProcessor> nameObfuscationProcessors = new ArrayList<>();
     private String mainClass;
     private Map<String, ClassWrapper> classPath = new HashMap<>();
@@ -112,7 +112,7 @@ public class JObfImpl {
         return mainClass;
     }
 
-    private void setMainClass(String mainClass) {
+    public void setMainClass(String mainClass) {
         this.mainClass = mainClass;
     }
 
