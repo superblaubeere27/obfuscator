@@ -10,17 +10,6 @@
 
 package me.superblaubeere27.jobf.processors.name;
 
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Random;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Pattern;
-
 import lombok.extern.slf4j.Slf4j;
 import me.superblaubeere27.jobf.JObfImpl;
 import me.superblaubeere27.jobf.utils.ClassTree;
@@ -37,6 +26,12 @@ import org.objectweb.asm.commons.Remapper;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
+
+import java.lang.reflect.Modifier;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 
 @Slf4j(topic = "obfuscator")
 public class NameObfuscation implements INameObfuscationProcessor {
@@ -125,9 +120,16 @@ public class NameObfuscation implements INameObfuscationProcessor {
             AtomicInteger classCounter = new AtomicInteger();
 
             classWrappers.forEach(classWrapper -> {
+                if (!inst.script.remapClass(classWrapper.classNode)) {
+                    log.info(String.format("Skipping by script: %s", classWrapper.classNode.name));
+                    return;
+                }
                 boolean excluded = this.isClassExcluded(classWrapper);
                 boolean isMainClass = JObfImpl.INSTANCE.getMainClass().replace('.', '/').equals(classWrapper.originalName);
+                boolean isAgentClass = JObfImpl.INSTANCE.getAgentClass().replace('.', '/').equals(classWrapper.originalName);
                 AtomicBoolean builtHierarchy = new AtomicBoolean(false);
+                boolean isFXMLController = JObfImpl.INSTANCE.getFXMLControllerDataByClassName(classWrapper.originalName)
+                        != null;
 
                 for (MethodWrapper method : classWrapper.methods) {
                     if ((Modifier.isPrivate(method.methodNode.access) || Modifier.isProtected(method.methodNode.access)) && excluded)
@@ -158,7 +160,11 @@ public class NameObfuscation implements INameObfuscationProcessor {
 
                     try {
                         if (!isMethodExcluded(classWrapper.originalName, methodWrapper) && canRenameMethodTree(mappings, new HashSet<>(), methodWrapper, classWrapper.originalName)) {
-                            this.renameMethodTree(mappings, new HashSet<>(), methodWrapper, classWrapper.originalName, NameUtils.generateMethodName(classWrapper.originalName, methodWrapper.originalDescription));
+                            String newMethodName = NameUtils.generateMethodName(classWrapper.originalName, methodWrapper.originalDescription);
+                            if (isFXMLController) {
+                                JObfImpl.INSTANCE.getFXMLControllerDataByClassName(classWrapper.originalName).addMethodData(methodWrapper.originalName, newMethodName);
+                            }
+                            this.renameMethodTree(mappings, new HashSet<>(), methodWrapper, classWrapper.originalName,newMethodName);
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -167,7 +173,11 @@ public class NameObfuscation implements INameObfuscationProcessor {
 
                 classWrapper.fields.forEach(fieldWrapper -> {
                     if (!isFieldExcluded(classWrapper.originalName, fieldWrapper) && canRenameFieldTree(mappings, new HashSet<>(), fieldWrapper, classWrapper.originalName)) {
-                        this.renameFieldTree(new HashSet<>(), fieldWrapper, classWrapper.originalName, NameUtils.generateFieldName(classWrapper.originalName), mappings);
+                        String newFieldName = NameUtils.generateFieldName(classWrapper.originalName);
+                        if (isFXMLController) {
+                            JObfImpl.INSTANCE.getFXMLControllerDataByClassName(classWrapper.originalName).addFieldData(fieldWrapper.originalName, newFieldName);
+                        }
+                        this.renameFieldTree(new HashSet<>(), fieldWrapper, classWrapper.originalName, newFieldName, mappings);
                     }
                 });
 
@@ -184,6 +194,14 @@ public class NameObfuscation implements INameObfuscationProcessor {
                 if (isMainClass) {
                     JObfImpl.INSTANCE.setMainClass(obfuscatedClassName);
                     JObfImpl.INSTANCE.mainClassChanged = true;
+                }
+                if (isAgentClass) {
+                    JObfImpl.INSTANCE.setAgentClass(obfuscatedClassName);
+                    JObfImpl.INSTANCE.agentClassChanged = true;
+                }
+                if (isFXMLController) {
+                    JObfImpl.INSTANCE.getFXMLControllerDataByClassName(classWrapper.originalName)
+                            .setObfuscatedClassName(obfuscatedClassName);
                 }
 
                 putMapping(mappings, classWrapper.originalName, obfuscatedClassName);
@@ -220,7 +238,7 @@ public class NameObfuscation implements INameObfuscationProcessor {
                 for (int i = 0; i < copy.methods.size(); i++) {
                     classWrapper.methods.get(i).methodNode = copy.methods.get(i);
 
-                    /*for (AbstractInsnNode insn : methodNode.instructions.toArray()) { // TODO: Fix lambdas + interface
+                    /*for (AbstractInsnNode insn : classWrapper.methods.get(i).methodNode.instructions.toArray()) { // TODO: Fix lambdas + interface
                         if (insn instanceof InvokeDynamicInsnNode) {
                             InvokeDynamicInsnNode indy = (InvokeDynamicInsnNode) insn;
                             if (indy.bsm.getOwner().equals("java/lang/invoke/LambdaMetafactory")) {
