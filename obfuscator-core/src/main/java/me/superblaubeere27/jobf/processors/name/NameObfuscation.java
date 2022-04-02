@@ -125,8 +125,8 @@ public class NameObfuscation implements INameObfuscationProcessor {
                     return;
                 }
                 boolean excluded = this.isClassExcluded(classWrapper);
-                boolean isMainClass = JObfImpl.INSTANCE.getMainClass().replace('.', '/').equals(classWrapper.originalName);
-                boolean isAgentClass = JObfImpl.INSTANCE.getAgentClass().replace('.', '/').equals(classWrapper.originalName);
+                boolean isMainClass = JObfImpl.INSTANCE.getMainClass() != null && JObfImpl.INSTANCE.getMainClass().replace('.', '/').equals(classWrapper.originalName);
+                boolean isAgentClass = JObfImpl.INSTANCE.getAgentClass() != null && JObfImpl.INSTANCE.getAgentClass().replace('.', '/').equals(classWrapper.originalName);
                 AtomicBoolean builtHierarchy = new AtomicBoolean(false);
                 boolean isFXMLController = JObfImpl.INSTANCE.getFXMLControllerDataByClassName(classWrapper.originalName)
                         != null;

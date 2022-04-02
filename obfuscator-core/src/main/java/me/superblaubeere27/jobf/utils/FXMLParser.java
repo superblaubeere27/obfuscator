@@ -44,7 +44,7 @@ public class FXMLParser {
             Document doc = dBuilder.parse(inputStream);
 
             if (controllerData.getObfuscatedClassName() != null) {
-                doc.getDocumentElement().setAttribute("fx:controller", controllerData.getObfuscatedClassName());
+                doc.getDocumentElement().setAttribute("fx:controller", controllerData.getObfuscatedClassName().replace('/','.'));
             }
 
             XPath xPath = XPathFactory.newInstance().newXPath();
@@ -64,7 +64,6 @@ public class FXMLParser {
 
             for (int index=0; index < fieldsNodeList.getLength(); index++) {
                 Node fieldNode = fieldsNodeList.item(index);
-                String a = controllerData.getFieldsData().get(fieldNode.getNodeValue());
                 if (controllerData.getFieldsData().containsKey(fieldNode.getNodeValue())) {
                     fieldNode.setNodeValue(controllerData.getFieldsData().get(fieldNode.getNodeValue()));
                 }
