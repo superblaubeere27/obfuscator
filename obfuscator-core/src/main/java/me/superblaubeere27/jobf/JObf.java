@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.formdev.flatlaf.FlatDarculaLaf;
-import com.formdev.flatlaf.FlatIntelliJLaf;
 import com.google.common.io.ByteStreams;
 import joptsimple.OptionException;
 import joptsimple.OptionParser;
