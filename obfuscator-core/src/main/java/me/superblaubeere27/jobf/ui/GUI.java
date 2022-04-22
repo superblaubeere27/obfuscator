@@ -79,7 +79,7 @@ public class GUI extends JFrame {
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setContentPane(panel1);
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        setSize((int) (screenSize.getWidth() / 2), (int) (screenSize.getHeight() / 1.9));
+        setSize((int) (screenSize.getWidth() / 2), (int) (screenSize.getHeight() / 1.7));
         setLocationRelativeTo(null);
         setTitle(JObf.VERSION);
 
