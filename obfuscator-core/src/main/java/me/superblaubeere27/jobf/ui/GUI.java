@@ -78,8 +78,7 @@ public class GUI extends JFrame {
     public GUI(String updateCheckResult) {
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setContentPane(panel1);
-        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        setSize((int) (screenSize.getWidth() / 2), (int) (screenSize.getHeight() / 1.7));
+        setSize(870, 600);
         setLocationRelativeTo(null);
         setTitle(JObf.VERSION);
 
