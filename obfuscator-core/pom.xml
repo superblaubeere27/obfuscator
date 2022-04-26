@@ -46,6 +46,7 @@
         <jcp.version>6.1.4</jcp.version>
         <commons-lang3.version>3.11</commons-lang3.version>
         <nashorn.version>15.2</nashorn.version>
+        <flatlaf.version>2.1</flatlaf.version>
     </properties>
 
     <dependencies>
@@ -152,6 +153,13 @@
         <!--<artifactId>jscriptbox</artifactId>-->
         <!--<version>3.0.0</version>-->
         <!--</dependency>-->
+        <!-- https://mvnrepository.com/artifact/com.formdev/flatlaf -->
+        <dependency>
+            <groupId>com.formdev</groupId>
+            <artifactId>flatlaf</artifactId>
+            <version>${flatlaf.version}</version>
+        </dependency>
+
 
     </dependencies>
 

@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.formdev.flatlaf.FlatDarculaLaf;
 import com.google.common.io.ByteStreams;
 import joptsimple.OptionException;
 import joptsimple.OptionParser;
@@ -124,7 +125,7 @@ public class JObf {
 
             try {
                 if (Utils.isWindows()) {
-                    UIManager.setLookAndFeel("com.bulenkov.darcula.DarculaLaf");
+                    FlatDarculaLaf.setup();
                 } else {
                     UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
                 }
