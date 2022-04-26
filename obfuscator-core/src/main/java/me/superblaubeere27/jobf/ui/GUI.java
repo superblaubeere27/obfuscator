@@ -78,7 +78,7 @@ public class GUI extends JFrame {
     public GUI(String updateCheckResult) {
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setContentPane(panel1);
-        setSize(870, 600);
+        setSize(900, 600);
         setLocationRelativeTo(null);
         setTitle(JObf.VERSION);
 
