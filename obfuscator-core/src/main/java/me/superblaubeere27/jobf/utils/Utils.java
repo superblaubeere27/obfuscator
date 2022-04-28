@@ -290,7 +290,21 @@ public class Utils {
 
         for (String s1 : s.split("\n")) {
             if (s1.startsWith("Main-Class")) {
-                sb.append("Main-Class: ").append(main).append("\n");
+                sb.append("Main-Class: ").append(main.replace('/','.')).append("\n");
+            } else {
+                sb.append(s1).append("\n");
+            }
+        }
+
+        return sb.toString();
+    }
+
+    public static String replaceAgentClass(String s, String agent) {
+        StringBuilder sb = new StringBuilder();
+
+        for (String s1 : s.split("\n")) {
+            if (s1.startsWith("Launcher-Agent-Class")) {
+                sb.append("Launcher-Agent-Class: ").append(agent.replace('/','.')).append("\n");
             } else {
                 sb.append(s1).append("\n");
             }
@@ -309,6 +323,18 @@ public class Utils {
         }
 
         return mainClass;
+    }
+
+    public static String getAgentClass(String s) {
+        String agentClass = null;
+
+        for (String s1 : s.split("\n")) {
+            if (s1.startsWith("Launcher-Agent-Class: ")) {
+                agentClass = s1.substring("Launcher-Agent-Class: ".length()).trim().replace("\r", "");
+            }
+        }
+
+        return agentClass;
     }
 
 

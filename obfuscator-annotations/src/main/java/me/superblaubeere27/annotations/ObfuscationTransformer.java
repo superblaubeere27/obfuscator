@@ -24,5 +24,6 @@ public enum ObfuscationTransformer {
     INNER_CLASS_REMOVER,
     NAME_OBFUSCATION,
     HIDE_MEMBERS,
-    INLINING
+    INLINING,
+    EXPIREDATE
 }

@@ -10,15 +10,7 @@
 
 package me.superblaubeere27.jobf;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -42,17 +34,7 @@ import java.util.zip.ZipOutputStream;
 
 import com.google.common.io.ByteStreams;
 import lombok.extern.slf4j.Slf4j;
-import me.superblaubeere27.jobf.processors.CrasherTransformer;
-import me.superblaubeere27.jobf.processors.HWIDProtection;
-import me.superblaubeere27.jobf.processors.HideMembers;
-import me.superblaubeere27.jobf.processors.InlineTransformer;
-import me.superblaubeere27.jobf.processors.InvokeDynamic;
-import me.superblaubeere27.jobf.processors.LineNumberRemover;
-import me.superblaubeere27.jobf.processors.NumberObfuscationTransformer;
-import me.superblaubeere27.jobf.processors.ReferenceProxy;
-import me.superblaubeere27.jobf.processors.ShuffleMembersTransformer;
-import me.superblaubeere27.jobf.processors.StaticInitializionTransformer;
-import me.superblaubeere27.jobf.processors.StringEncryptionTransformer;
+import me.superblaubeere27.jobf.processors.*;
 import me.superblaubeere27.jobf.processors.flowObfuscation.FlowObfuscator;
 import me.superblaubeere27.jobf.processors.name.ClassWrapper;
 import me.superblaubeere27.jobf.processors.name.INameObfuscationProcessor;
@@ -60,10 +42,7 @@ import me.superblaubeere27.jobf.processors.name.InnerClassRemover;
 import me.superblaubeere27.jobf.processors.name.NameObfuscation;
 import me.superblaubeere27.jobf.processors.optimizer.Optimizer;
 import me.superblaubeere27.jobf.processors.packager.Packager;
-import me.superblaubeere27.jobf.utils.ClassTree;
-import me.superblaubeere27.jobf.utils.MissingClassException;
-import me.superblaubeere27.jobf.utils.NameUtils;
-import me.superblaubeere27.jobf.utils.Utils;
+import me.superblaubeere27.jobf.utils.*;
 import me.superblaubeere27.jobf.utils.scheduler.ScheduledRunnable;
 import me.superblaubeere27.jobf.utils.scheduler.Scheduler;
 import me.superblaubeere27.jobf.utils.script.JObfScript;
@@ -83,9 +62,11 @@ public class JObfImpl {
     public static HashMap<String, byte[]> files = new HashMap<>();
     private static List<IPreClassTransformer> preProcessors;
     public JObfScript script;
-    private boolean mainClassChanged;
+    public boolean mainClassChanged;
+    public boolean agentClassChanged;
     private final List<INameObfuscationProcessor> nameObfuscationProcessors = new ArrayList<>();
     private String mainClass;
+    private String agentClass;
     private Map<String, ClassWrapper> classPath = new HashMap<>();
     private Map<String, ClassTree> hierarchy = new HashMap<>();
     private Set<ClassWrapper> libraryClassnodes = new HashSet<>();
@@ -94,6 +75,7 @@ public class JObfImpl {
     private boolean invokeDynamic;
     private final JObfSettings settings = new JObfSettings();
     private int threadCount = Math.max(1, Runtime.getRuntime().availableProcessors());
+    private final Map<String, FXMLControllerData> fxmlControllerClasses = new HashMap<>();
 
 
     public JObfImpl() {
@@ -108,12 +90,26 @@ public class JObfImpl {
         return classes;
     }
 
+    public FXMLControllerData getFXMLControllerDataByClassName(String className) {
+        return this.fxmlControllerClasses.values().stream()
+                .filter(fxmlControllerData -> fxmlControllerData.getOriginalClassName().equals(className))
+                .findFirst().orElse(null);
+    }
+
     public String getMainClass() {
         return mainClass;
     }
 
-    private void setMainClass(String mainClass) {
+    public void setMainClass(String mainClass) {
         this.mainClass = mainClass;
+    }
+
+    public String getAgentClass() {
+        return agentClass;
+    }
+
+    public void setAgentClass(String agentClass) {
+        this.agentClass = agentClass;
     }
 
     public ClassTree getTree(String ref) {
@@ -295,6 +291,9 @@ public class JObfImpl {
     private void addProcessors() {
         processors.add(new StaticInitializionTransformer(this));
 
+        processors.add(new ExpireDate(this));
+
+
         processors.add(new HWIDProtection(this));
         processors.add(new Optimizer());
         processors.add(new InlineTransformer(this));
@@ -306,6 +305,7 @@ public class JObfImpl {
         processors.add(new HideMembers(this));
         processors.add(new LineNumberRemover(this));
         processors.add(new ShuffleMembersTransformer(this));
+
 
 
         nameObfuscationProcessors.add(new NameObfuscation());
@@ -380,6 +380,7 @@ public class JObfImpl {
                 throw new FileNotFoundException("Could not open output file: " + e.getMessage());
             }
             setMainClass(null);
+            setAgentClass(null);
 
             log.info("... Finished after " + Utils.formatTime(System.currentTimeMillis() - startTime));
 
@@ -436,6 +437,13 @@ public class JObfImpl {
                 } else {
                     if (entryName.equals("META-INF/MANIFEST.MF")) {
                         setMainClass(Utils.getMainClass(new String(entryData, StandardCharsets.UTF_8)));
+                        setAgentClass(Utils.getAgentClass(new String(entryData, StandardCharsets.UTF_8)));
+                    }
+                    if (entryName.endsWith(".fxml")) {
+                        String className = FXMLParser.getControllerClassName(new ByteArrayInputStream(entryData));
+                        if (className != null) {
+                            this.fxmlControllerClasses.put(entryName, new FXMLControllerData(className.replace('.', '/')));
+                        }
                     }
 
                     files.put(entryName, entryData);
@@ -627,12 +635,25 @@ public class JObfImpl {
                 if (entryName.equals("META-INF/MANIFEST.MF")) {
                     if (Packager.INSTANCE.isEnabled()) {
                         entryData = Utils.replaceMainClass(new String(entryData, StandardCharsets.UTF_8), Packager.INSTANCE.getDecryptionClassName()).getBytes(StandardCharsets.UTF_8);
-                    } else if (mainClassChanged) {
-                        entryData = Utils.replaceMainClass(new String(entryData, StandardCharsets.UTF_8), mainClass).getBytes(StandardCharsets.UTF_8);
-                        log.info("Replaced Main-Class with " + mainClass);
+                    } else {
+                        if (mainClassChanged) {
+                            entryData = Utils.replaceMainClass(new String(entryData, StandardCharsets.UTF_8), mainClass).getBytes(StandardCharsets.UTF_8);
+                            log.info("Replaced Main-Class with " + mainClass);
+                        }
+                        if (agentClassChanged) {
+                            entryData = Utils.replaceAgentClass(new String(entryData, StandardCharsets.UTF_8), agentClass).getBytes(StandardCharsets.UTF_8);
+                            log.info("Replaced LoaderAgent-Class with " + agentClass);
+
+                        }
                     }
 
+
                     log.info("Processed MANIFEST.MF");
+                }
+                if (entryName.endsWith(".fxml") && this.fxmlControllerClasses.containsKey(entryName)) {
+                    entryData = FXMLParser.updateFXML(new ByteArrayInputStream(entryData), this.fxmlControllerClasses.get(entryName));
+                    log.info("Processed FXML file " + entryName);
+
                 }
                 log.info("Copying " + entryName);
 
